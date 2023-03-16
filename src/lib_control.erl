@@ -44,15 +44,15 @@
 start_parents()->
     Result=case rpc:call(node(),parent_server,stopped_nodes,[],10*1000) of
 	       {ok,[]}->
-		   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: No stopped Parents : ",[],node(),?MODULE,?LINE]]),    
+	%	   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: No stopped Parents : ",[],node(),?MODULE,?LINE]]),    
 		   {ok,[]};
 	       {ok,StoppedParents}->
-		   io:format("StoppedParents  ~p~n",[{StoppedParents,?MODULE,?LINE}]),
+	%	   io:format("StoppedParents  ~p~n",[{StoppedParents,?MODULE,?LINE}]),
 		   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: StoppedParents : ",StoppedParents,node(),?MODULE,?LINE]]),    
 		   
 		   CreateResult=[{rpc:call(node(),parent_server,create_node,[Parent],25*1000),Parent}||Parent<-StoppedParents],
-		   io:format("CreateResult  ~p~n",[{CreateResult,?MODULE,?LINE}]),
-		   io:format("Ping parents  ~p~n",[{[{net_adm:ping(N),N}||N<-StoppedParents],?MODULE,?LINE}]),
+	%	   io:format("CreateResult  ~p~n",[{CreateResult,?MODULE,?LINE}]),
+	%	   io:format("Ping parents  ~p~n",[{[{net_adm:ping(N),N}||N<-StoppedParents],?MODULE,?LINE}]),
 		   
 	%	   [sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Creating parent node :", CreateRes,ParentNode,?MODULE,?LINE]])||
 	%	       {CreateRes,ParentNode}<-CreateResult,
@@ -91,7 +91,7 @@ start_pods()->
   %   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: function start : ",node(),?MODULE,?LINE]]),
     Result=case rpc:call(node(),pod_server,stopped_nodes,[],25*1000) of
 	       {ok,[]}->
-		   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: No stopped pods : ",[],node(),?MODULE,?LINE]]),    
+	%	   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: No stopped pods : ",[],node(),?MODULE,?LINE]]),    
 		   ok;
 	       {ok,Stopped}->
 		   CreateResult=[{rpc:call(node(),pod_server,create_node,[Pod],25*1000),Pod}||Pod<-Stopped],

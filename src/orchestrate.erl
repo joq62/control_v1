@@ -25,11 +25,11 @@
 %% @end
 %%--------------------------------------------------------------------
 start(ClusterSpec)->
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["start_orchistrate",time(),node()]]),
+  %  sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["start_orchistrate",time(),node()]]),
     start(ClusterSpec,?SleepInterval).
 
 start(ClusterSpec,SleepInterval)->
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG orchistrate  : ",time(),?MODULE,?LINE]]),
+ %   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG orchistrate  : ",time(),?MODULE,?LINE]]),
     timer:sleep(SleepInterval),
 %    ResultStartParents=debug1,
     ResultStartParents=rpc:call(node(),lib_control,start_parents,[],15*1000),

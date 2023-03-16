@@ -23,7 +23,8 @@
 
 %%-------------------------------------------------------------------
 -record(state,{
-	       cluster_spec	       
+	       cluster_spec,
+	       wanted_state
 	      }).
 
 
@@ -49,7 +50,8 @@ init(ClusterSpec) ->
     io:format(" ~p~n",[{ClusterSpec,?MODULE,?LINE}]),
     Result=rpc:cast(node(),orchestrate,start,[ClusterSpec]),
     sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["Servere started",Result,node()]]),
-    {ok, #state{cluster_spec=ClusterSpec}}.   
+    {ok, #state{cluster_spec=ClusterSpec,
+		wanted_state=undefined}}.   
  
 
 %% --------------------------------------------------------------------
@@ -89,16 +91,32 @@ handle_cast({orchestrate_result,
 	     ResultStartPods,
 	     ResultStartInfraAppls,
 	     ResultStartUserAppls}, State) ->
-
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["Orchistrate_result:",date(),time(),
-							      ResultStartParents,
-							      ResultStartPods,
-							      ResultStartInfraAppls,
-							      ResultStartUserAppls,
-							      ?MODULE,?LINE]]),
     
+    
+    {ok,StoppedParents}=lib_parent:stopped_nodes(State#state.cluster_spec),
+    {ok,StoppedPod}=lib_pod:stopped_nodes(State#state.cluster_spec),
+    {ok,StoppedAppl}=lib_appl:stopped_nodes(State#state.cluster_spec),
+    
+    NewWantedState=case {StoppedParents,StoppedPod,StoppedAppl} of
+		       {[],[],[]}->
+			   desired_state;
+		       _->
+			   not_desired_state
+		   end,
+    case State#state.wanted_state of
+	NewWantedState->
+	    ok;
+	_->	    
+	    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["New state:",date(),time(),
+								      NewWantedState,
+								      ResultStartParents,
+								      ResultStartPods,
+								      ResultStartInfraAppls,
+								      ResultStartUserAppls,
+								      ?MODULE,?LINE]])
+    end,
     rpc:cast(node(),orchestrate,start,[State#state.cluster_spec]),
-    {noreply, State};
+    {noreply, State#state{wanted_state=NewWantedState}};
 
 handle_cast(Msg, State) ->
     sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Msg,?MODULE,?LINE]]),
