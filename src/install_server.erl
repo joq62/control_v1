@@ -1,9 +1,13 @@
 %%% -------------------------------------------------------------------
-%%% Author  : joqerlang
+%%% Author  : uabjle
+%%% Description : resource discovery accroding to OPT in Action 
+%%% This service discovery is adapted to 
+%%% Type = application 
+%%% Instance ={ip_addr,{IP_addr,Port}}|{erlang_node,{ErlNode}}
 %%% 
 %%% Created : 10 dec 2012
 %%% -------------------------------------------------------------------
--module(control_server).
+-module(install_server).
  
 -behaviour(gen_server).
 
@@ -11,8 +15,29 @@
 %% Include files
 %% --------------------------------------------------------------------
 
-
 %% --------------------------------------------------------------------
+-define(HeartbeatTime,20*1000).
+
+ 
+
+%% External exports
+
+
+
+
+
+-export([
+	
+	]).
+-export([
+	 ping/0
+	]).
+
+
+-export([
+	 start/1,
+	 stop/0
+	]).
 
 
 %% gen_server callbacks
@@ -23,7 +48,7 @@
 
 %%-------------------------------------------------------------------
 -record(state,{
-	       cluster_spec	       
+	       cluster_spec
 	      }).
 
 
@@ -31,7 +56,31 @@
 %% External functions
 %% ====================================================================
 
-       
+	    
+%% call
+start(ClusterSpec)-> gen_server:start_link({local, ?MODULE}, ?MODULE, [ClusterSpec], []).
+stop()-> gen_server:call(?MODULE, {stop},infinity).
+%%---------------------------------------------------------------------
+load_desired_state(ClusterSpec)->
+    gen_server:call(?MODULE,{load_desired_state,ClusterSpec},infinity).
+
+create_node(ParentNode)->
+    gen_server:call(?MODULE,{create_node,ParentNode},infinity).
+
+desired_nodes()->
+    gen_server:call(?MODULE,{desired_nodes},infinity).
+active_nodes()->
+    gen_server:call(?MODULE,{active_nodes},infinity).
+stopped_nodes()->
+    gen_server:call(?MODULE,{stopped_nodes},infinity).
+
+
+%%----------------------------------------------------------------------------
+
+ping() ->
+    gen_server:call(?MODULE, {ping}).
+%% cast
+
 
 %% ====================================================================
 %% Server functions
@@ -45,10 +94,9 @@
 %%          ignore               |
 %%          {stop, Reason}
 %% --------------------------------------------------------------------
-init(ClusterSpec) -> 
+init([ClusterSpec]) -> 
     io:format(" ~p~n",[{ClusterSpec,?MODULE,?LINE}]),
-    Result=rpc:cast(node(),orchestrate,start,[ClusterSpec]),
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["Servere started",Result,node()]]),
+    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["Servere started"]]),
     {ok, #state{cluster_spec=ClusterSpec}}.   
  
 
@@ -62,13 +110,19 @@ init(ClusterSpec) ->
 %%          {stop, Reason, Reply, State}   | (terminate/2 is called)
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
-handle_call({start_orchistrate},_From, State) ->
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["start_orchistrate",time(),node()]]),
-    Reply= rpc:cast(node(),orchestrate,start,[State#state.cluster_spec]),
+handle_call({create_node,ParentNode},_From, State) ->
+    Reply=lib_parent:create_node(ParentNode),
+    {reply, Reply, State};
+
+handle_call({active_nodes},_From, State) ->
+    Reply=lib_parent:active_nodes(State#state.cluster_spec),
+    {reply, Reply, State};
+
+handle_call({stopped_nodes},_From, State) ->
+    Reply= lib_parent:stopped_nodes(State#state.cluster_spec),
     {reply, Reply, State};
 
 handle_call({ping},_From, State) ->
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ping",node()]]),
     Reply=pong,
     {reply, Reply, State};
 
@@ -84,25 +138,8 @@ handle_call(Request, From, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
-handle_cast({orchestrate_result,
-	     ResultStartParents,
-	     ResultStartPods,
-	     ResultStartInfraAppls,
-	     ResultStartUserAppls}, State) ->
-
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["Orchistrate_result:",date(),time(),
-							      ResultStartParents,
-							      ResultStartPods,
-							      ResultStartInfraAppls,
-							      ResultStartUserAppls,
-							      ?MODULE,?LINE]]),
-    
-    rpc:cast(node(),orchestrate,start,[State#state.cluster_spec]),
-    {noreply, State};
-
 handle_cast(Msg, State) ->
     sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Msg,?MODULE,?LINE]]),
-    io:format("unmatched match cast ~p~n",[{Msg,?MODULE,?LINE}]),
     {noreply, State}.
 
 %% --------------------------------------------------------------------
@@ -112,6 +149,9 @@ handle_cast(Msg, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
+handle_info({ssh_cm,_,_}, State) ->
+    {noreply, State};
+
 handle_info(Info, State) ->
     sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Info,?MODULE,?LINE]]),
     {noreply, State}.

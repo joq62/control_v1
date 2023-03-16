@@ -8,9 +8,6 @@
 %%%-------------------------------------------------------------------
 -module(orchestrate).
 
-
--define(LogDir,"log_dir").
--define(LogFileName,"file.logs").
 -define(SleepInterval,60*1000).
 %% API
 -export([
@@ -28,14 +25,15 @@
 %% @end
 %%--------------------------------------------------------------------
 start(ClusterSpec)->
+    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["start_orchistrate",time(),node()]]),
     start(ClusterSpec,?SleepInterval).
 
 start(ClusterSpec,SleepInterval)->
- %   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG orchistrate  : ",time(),?MODULE,?LINE]]),
+    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG orchistrate  : ",time(),?MODULE,?LINE]]),
     timer:sleep(SleepInterval),
 %    ResultStartParents=debug1,
     ResultStartParents=rpc:call(node(),lib_control,start_parents,[],15*1000),
-%    sd:cast(nodelog,nodelog,log,[notice,lib_control_STRING,?LINE,["ResultStartParents  : ",ResultStartParents,?MODULE,?LINE]]),
+    sd:cast(nodelog,nodelog,log,[notice,lib_control_STRING,?LINE,["ResultStartParents  : ",ResultStartParents,?MODULE,?LINE]]),
  %   ResultStartPods=debug2,
     ResultStartPods=rpc:call(node(),lib_control,start_pods,[],60*1000),
 %    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ResultStartPods  : ",ResultStartPods,?MODULE,?LINE]]),
@@ -48,7 +46,7 @@ start(ClusterSpec,SleepInterval)->
 %    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ResultStartUserAppls  : ",ResultStartUserAppls,?MODULE,?LINE]]),
 
 
-    rpc:cast(node(),infra_service,orchistrate_result,[ResultStartParents,
+    rpc:cast(node(),control,orchestrate_result,[ResultStartParents,
 						      ResultStartPods,
 						      ResultStartInfraAppls,
 						      ResultStartUserAppls]).

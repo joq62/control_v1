@@ -29,24 +29,50 @@ start([ClusterSpec,_Arg2])->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
 
     ok=setup(),
-    ok=lib_install:start_local_appls(ClusterSpec),
-    true=lib_control:ensure_right_cookie(ClusterSpec),
-    ok=lib_install:stop_all_pods(ClusterSpec),
+    ok=start_local_appls(ClusterSpec),
+    ok=ensure_right_cookie(ClusterSpec),
+    ok=stop_all_pods(ClusterSpec),
     io:format("local apps running OK !!! ~p~n",[{?MODULE,?LINE,?FUNCTION_NAME}]),
+
+    {ok,ActiveParents}=start_parents(ClusterSpec),
+						%    io:format("ActiveParents OK !!! ~p~n",[{ActiveParents,?MODULE,?LINE,?FUNCTION_NAME}]),
+    {ok,ActivePods}=start_pods(ClusterSpec),
+ %   io:format("ActivePods  OK !!! ~p~n",[{lists:sort(ActivePods),?MODULE,?LINE,?FUNCTION_NAME}]),
+    io:format("All pods are runing OK !!! ~p~n",[{?MODULE,?LINE,?FUNCTION_NAME}]),
     
-    ok=lib_install:start_parents(ClusterSpec),
-    io:format("ParentNode OK !!! ~p~n",[{?MODULE,?LINE,?FUNCTION_NAME}]),
+    ok=start_common_sd(ActivePods),
+    io:format("Common and sd running on all pods  OK !!! ~p~n",[{?MODULE,?LINE,?FUNCTION_NAME}]),
 
-    {ok,Nodelog}=lib_install:start_nodelog(ClusterSpec),
-    io:format("Nodelog started OK !!! ~p~n",[{Nodelog,?MODULE,?LINE,?FUNCTION_NAME}]),
+    ok=start_nodelog(ClusterSpec),
+    io:format("Nodelog is running on   OK !!! ~p~n",[{sd:get_node(nodelog),?MODULE,?LINE,?FUNCTION_NAME}]),
+    
+    ok=start_etcd(ClusterSpec),
+    io:format("Etcd is running on   OK !!! ~p~n",[{sd:get_node(etcd),?MODULE,?LINE,?FUNCTION_NAME}]),
+    
+%    ok=start_parents(),
+%    ok=start_infra_appls(ClusterSpec),
+%    sd:call(control,control,start_orchistrate,[],5000),
+    
+%    ok=desired_test(),
+%    ok=check_appl_status(),
+ %   ok=secure_parents_pods_started(),
+ %   ok=install_appls(),
+ %   ok=orchistrate(),
+ %   ok=create_initial_node(),
+    
+        
+  % Creat parent 
 
-    {ok,EtcdNode}=lib_install:start_etcd(ClusterSpec),
-    io:format("EtcdNode started OK !!! ~p~n",[{EtcdNode,?MODULE,?LINE,?FUNCTION_NAME}]),
+    % Create pod
 
-    {ok,ControlNode}=lib_install:start_control(ClusterSpec),
-    io:format("ControlNode started OK !!! ~p~n",[{ControlNode,?MODULE,?LINE,?FUNCTION_NAME}]),
-   
-    WhichApplications=[{Node,rpc:call(Node,application,which_applications,[],5000)}||Node<-[Nodelog|rpc:call(Nodelog,erlang,nodes,[],5000)]],
+    % load common, resources_discovery 
+    
+    % load and intiated nodelog
+
+    % load and intitate db_etcd
+    
+    % load and intitae infra
+    WhichApplications=[{Node,rpc:call(Node,application,which_applications,[],5000)}||Node<-nodes()],
     io:format("WhichApplications ~p~n",[{lists:sort(WhichApplications),?MODULE,?LINE,?FUNCTION_NAME}]),
     io:format("Stop OK !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
   %  init:stop(),

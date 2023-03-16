@@ -44,10 +44,11 @@
 start_parents()->
     Result=case rpc:call(node(),parent_server,stopped_nodes,[],10*1000) of
 	       {ok,[]}->
+		   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: No stopped Parents : ",[],node(),?MODULE,?LINE]]),    
 		   {ok,[]};
 	       {ok,StoppedParents}->
 		   io:format("StoppedParents  ~p~n",[{StoppedParents,?MODULE,?LINE}]),
-	%	   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: StoppedParents : ",StoppedParents,node(),?MODULE,?LINE]]),    
+		   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: StoppedParents : ",StoppedParents,node(),?MODULE,?LINE]]),    
 		   
 		   CreateResult=[{rpc:call(node(),parent_server,create_node,[Parent],25*1000),Parent}||Parent<-StoppedParents],
 		   io:format("CreateResult  ~p~n",[{CreateResult,?MODULE,?LINE}]),
@@ -90,12 +91,13 @@ start_pods()->
   %   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: function start : ",node(),?MODULE,?LINE]]),
     Result=case rpc:call(node(),pod_server,stopped_nodes,[],25*1000) of
 	       {ok,[]}->
+		   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: No stopped pods : ",[],node(),?MODULE,?LINE]]),    
 		   ok;
 	       {ok,Stopped}->
 		   CreateResult=[{rpc:call(node(),pod_server,create_node,[Pod],25*1000),Pod}||Pod<-Stopped],
-	%	   [sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Creating pod node :", CreateRes,Pod,?MODULE,?LINE]])||
-	%	       {CreateRes,Pod}<-CreateResult,
-	%	       {ok,Pod}/=CreateRes],
+		   [sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Creating pod node :", CreateRes,Pod,?MODULE,?LINE]])||
+		       {CreateRes,Pod}<-CreateResult,
+		       {ok,Pod}/=CreateRes],
 	%	   [sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["OK Creating pod node :",Pod,?MODULE,?LINE]])||
 	%	       {ok,Pod}<-CreateResult],
 		   _CommonStart=[{rpc:call(node(),appl_server,create_appl,["common",Pod],25*1000),Pod}||{ok,Pod}<-CreateResult],
@@ -304,11 +306,11 @@ start_user_appls()->
 %% @end
 %%--------------------------------------------------------------------
 ensure_right_cookie(ClusterSpec)->
-    Result=case sd:call(db_etcd,db_cluster_spec,read,[cookie,ClusterSpec],5000) of
+    Result=case sd:call(etcd,db_cluster_spec,read,[cookie,ClusterSpec],5000) of
 	       {ok,Cookie}->
 		   erlang:set_cookie(node(),list_to_atom(Cookie));
 	       Reason->
-		   {error,["db_etcd,db_cluster_spec,read,[cookie, ",Reason,?MODULE,?LINE]}
+		   {error,["etcd,db_cluster_spec,read,[cookie, ",Reason,?MODULE,?LINE]}
 	   end,
     Result.
 

@@ -6,7 +6,8 @@
               {applications,[kernel,stdlib]},
               {env,[]},
               {modules,[appl,appl_server,control,control_app,control_server,
-                        control_sup,lib_appl,lib_control,lib_parent,lib_pod,
-                        local,ops_ssh,orchestrate,parent_server,pod_server]},
+                        control_sup,install_server,lib_appl,lib_control,
+                        lib_parent,lib_pod,local,ops_ssh,orchestrate,
+                        parent_server,pod_server]},
               {licenses,["Apache-2.0"]},
               {links,[]}]}.

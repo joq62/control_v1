@@ -13,7 +13,7 @@
 %% API
 -export([
 	 start_orchistrate/0,
-	 orchistrate_result/4,
+	 orchestrate_result/4,
 	 ping/0
 
 	]).
@@ -46,8 +46,8 @@ config(ClusterSpec)->
     
 start_orchistrate()->
     gen_server:call(?SERVER, {start_orchistrate},infinity).
-orchistrate_result(ResultStartParents,ResultStartPods,ResultStartInfraAppls,ResultStartUserAppls)->
-    gen_server:cast(?SERVER,{orchistrate_result,
+orchestrate_result(ResultStartParents,ResultStartPods,ResultStartInfraAppls,ResultStartUserAppls)->
+    gen_server:cast(?SERVER,{orchestrate_result,
 			     ResultStartParents,
 			     ResultStartPods,
 			     ResultStartInfraAppls,

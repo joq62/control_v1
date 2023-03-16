@@ -1,0 +1,184 @@
+%%% -------------------------------------------------------------------
+%%% @author  : Joq Erlang
+%%% @doc: : 
+%%% Created :
+%%% Node end point  
+%%% Creates and deletes Pods
+%%% 
+%%% API-kube: Interface 
+%%% Pod consits beams from all services, app and app and sup erl.
+%%% The setup of envs is
+%%% -------------------------------------------------------------------
+-module(lib_install).      
+ 
+-export([
+	 start_local_appls/1,	  
+	 stop_all_pods/1,
+	 start_parents/1,
+	 start_nodelog/1,
+	 start_etcd/1,
+	 start_control/1
+	
+	]).
+
+
+%% --------------------------------------------------------------------
+%% Include files
+%% --------------------------------------------------------------------
+-define(LogDir,"log_dir").
+-define(LogFileName,"file.logs").
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+start_control(ClusterSpec)->
+    WantedApp=control,
+    AllPods=db_pod_desired_state:pods(ClusterSpec),
+    A1=[{PodNode,sd:call(etcd,db_pod_desired_state,read,[appl_spec_list,PodNode],5000)}||PodNode<-AllPods],
+    A2=[{PodNode,ApplList}||{PodNode,{ok,ApplList}}<-A1],
+    PodApplSpecAppList=lists:append([pod_app_list(PodApplSpecList,[])||PodApplSpecList<-A2]),
+    [{ControlNode,_ApplSpec,_App}|_T]=[{PodNode,ApplSpec,App}||{PodNode,ApplSpec,App}<-PodApplSpecAppList,
+					  App==WantedApp],
+    %% Creat the initial pod
+    ok=lib_pod:create_node(ControlNode),
+    
+    %% start common and sd
+    ok=lib_appl:create_appl("common",ControlNode),
+    pong=rpc:call(ControlNode,common,ping,[],5000),
+    ok=lib_appl:create_appl("sd",ControlNode),
+    pong=rpc:call(ControlNode,sd,ping,[],5000),
+
+    %% start etcd
+    rpc:call(ControlNode,application,load,[control],5000),
+    ok=rpc:call(ControlNode,application,set_env,[[{control,[{cluster_spec,ClusterSpec}]}]],5000),
+    ok=lib_appl:create_appl("control",ControlNode),
+
+    {ok,ControlNode}.
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+start_etcd(ClusterSpec)->
+    WantedApp=etcd,
+    AllPods=db_pod_desired_state:pods(ClusterSpec),
+    A1=[{PodNode,sd:call(etcd,db_pod_desired_state,read,[appl_spec_list,PodNode],5000)}||PodNode<-AllPods],
+    A2=[{PodNode,ApplList}||{PodNode,{ok,ApplList}}<-A1],
+    PodApplSpecAppList=lists:append([pod_app_list(PodApplSpecList,[])||PodApplSpecList<-A2]),
+    [{EtcdNode,_ApplSpec,_App}|_T]=[{PodNode,ApplSpec,App}||{PodNode,ApplSpec,App}<-PodApplSpecAppList,
+					  App==WantedApp],
+    %% Creat the initial pod
+    ok=lib_pod:create_node(EtcdNode),
+    
+    %% start common and sd
+    ok=lib_appl:create_appl("common",EtcdNode),
+    pong=rpc:call(EtcdNode,common,ping,[],5000),
+    ok=lib_appl:create_appl("sd",EtcdNode),
+    pong=rpc:call(EtcdNode,sd,ping,[],5000),
+
+    %% start etcd
+    ok=lib_appl:create_appl("etcd",EtcdNode),
+
+    {ok,EtcdNode}.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+start_nodelog(ClusterSpec)->
+    WantedApp=nodelog,
+    AllPods=db_pod_desired_state:pods(ClusterSpec),
+    A1=[{PodNode,sd:call(etcd,db_pod_desired_state,read,[appl_spec_list,PodNode],5000)}||PodNode<-AllPods],
+    A2=[{PodNode,ApplList}||{PodNode,{ok,ApplList}}<-A1],
+    PodApplSpecAppList=lists:append([pod_app_list(PodApplSpecList,[])||PodApplSpecList<-A2]),
+    [{NodelogNode,_ApplSpec,_App}|_T]=[{PodNode,ApplSpec,App}||{PodNode,ApplSpec,App}<-PodApplSpecAppList,
+					  App==WantedApp],
+    %% Creat the initial pod
+    ok=lib_pod:create_node(NodelogNode),
+    
+    %% start common and sd
+    ok=lib_appl:create_appl("common",NodelogNode),
+    pong=rpc:call(NodelogNode,common,ping,[],5000),
+    ok=lib_appl:create_appl("sd",NodelogNode),
+    pong=rpc:call(NodelogNode,sd,ping,[],5000),
+
+    %% start nodelog
+    ok=lib_appl:create_appl("nodelog",NodelogNode),
+    false=rpc:call(NodelogNode,nodelog,is_config,[],5000),
+    {ok,PodDir}=db_pod_desired_state:read(pod_dir,NodelogNode),
+    PathLogDir=filename:join(PodDir,?LogDir),
+    rpc:call(NodelogNode,file,del_dir_r,[PathLogDir],5000),
+    ok=rpc:call(NodelogNode,file,make_dir,[PathLogDir],5000),
+    PathLogFile=filename:join([PathLogDir,?LogFileName]),
+    ok=rpc:call(NodelogNode,nodelog,config,[PathLogFile],5000),
+    true=rpc:call(NodelogNode,nodelog,is_config,[],5000),
+    pong=rpc:call(NodelogNode,nodelog,ping,[],5000),
+    {ok,NodelogNode}.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+pod_app_list({_PodNode,[]},Acc)->
+    Acc;
+pod_app_list({PodNode,[ApplSpec|T]},Acc)->
+   case sd:call(etcd,db_appl_spec,read,[app,ApplSpec],5000) of
+       {ok,App}->
+	   NewAcc=[{PodNode,ApplSpec,App}|Acc];
+       Reason->
+	   NewAcc=[{error,[Reason,PodNode,ApplSpec]}|Acc]
+   end,
+    pod_app_list({PodNode,T},NewAcc).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+ start_parents(ClusterSpec)->
+    ParentNodes=db_parent_desired_state:pods(ClusterSpec),
+    [rpc:call(Node,init,stop,[],5000)||Node<-ParentNodes],
+    []=[{error,[not_stopped,Node]}||Node<-ParentNodes,
+				    false==vm:check_stopped_node(Node)],
+ 
+    [lib_parent:create_node(Node)||Node<-ParentNodes],
+    []=[{error,[not_started,Node]}||Node<-ParentNodes,
+				    false==vm:check_started_node(Node)],
+    ok.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+start_local_appls(ClusterSpec)->
+    ok=application:start(common),
+    ok=application:start(sd),
+    ok=application:start(etcd),
+    pong=etcd:ping(),
+    ok=application:set_env([{control,[{cluster_spec,ClusterSpec}]}]),
+    ok=application:start(control),
+    pong=parent_server:ping(),
+    pong=pod_server:ping(),
+    pong=appl_server:ping(),
+
+    ok.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+stop_all_pods(ClusterSpec)->
+    [rpc:call(Pod,init,stop,[],5000)||Pod<-db_parent_desired_state:pods(ClusterSpec)],
+    timer:sleep(2000),
+    [rpc:call(Pod,init,stop,[],5000)||Pod<-db_pod_desired_state:pods(ClusterSpec)],
+    timer:sleep(2000),
+    ok.
+			
+    
