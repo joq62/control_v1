@@ -137,16 +137,16 @@ start_infra_appls(ClusterSpec)->
 		  [sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ResultCreate nodelog :",ResultCreate,?MODULE,?LINE]])||
 		      ResultCreate<- R_Nodelog],
 		  
-		  R_db_etcd=[{create_infra_appl({PodNode,ApplSpec,App},ClusterSpec),ApplSpec,PodNode}||{PodNode,ApplSpec,App}<-StoppedApplInfoLists,
+		  R_etcd=[{create_infra_appl({PodNode,ApplSpec,App},ClusterSpec),ApplSpec,PodNode}||{PodNode,ApplSpec,App}<-StoppedApplInfoLists,
 												       etcd==App],
-		  [sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ResultCreate db_etcd :",ResultCreate,?MODULE,?LINE]])||
-		      ResultCreate<-R_db_etcd],
+		  [sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ResultCreate etcd :",ResultCreate,?MODULE,?LINE]])||
+		      ResultCreate<-R_etcd],
 
-		  R_infra_service=[{create_infra_appl({PodNode,ApplSpec,App},ClusterSpec),ApplSpec,PodNode}||{PodNode,ApplSpec,App}<-StoppedApplInfoLists,
+		  R_control=[{create_infra_appl({PodNode,ApplSpec,App},ClusterSpec),ApplSpec,PodNode}||{PodNode,ApplSpec,App}<-StoppedApplInfoLists,
 													     control==App],
-		  [sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ResultCreate db_etcd :",ResultCreate,?MODULE,?LINE]])||
-		      ResultCreate<-R_infra_service],
-		  [{nodelog,R_Nodelog},{db_etcd,R_db_etcd},{infra_service,R_infra_service}];
+		  [sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ResultCreate control :",ResultCreate,?MODULE,?LINE]])||
+		      ResultCreate<-R_control],
+		  [{nodelog,R_Nodelog},{etcd,R_etcd},{control,R_control}];
 	      Reason->
 		  {error,[Reason,?MODULE,?LINE]}
 	  end,
@@ -161,7 +161,7 @@ start_infra_appls(ClusterSpec)->
 %% @end
 %%--------------------------------------------------------------------
 create_pods_based_appl(ApplSpec)->
-    Result=case sd:call(db_etcd,db_pod_desired_state,get_all_id,[],10*1000) of
+    Result=case sd:call(etcd,db_pod_desired_state,get_all_id,[],10*1000) of
 	       {badrpc,Reason}->
 		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["db_pod_desired_state,get_all_id : ",badrpc,Reason]]),
 		   {error,[badrpc,Reason,?MODULE,?LINE]};
@@ -170,7 +170,7 @@ create_pods_based_appl(ApplSpec)->
 		   {error,[no_pods,?MODULE,?LINE]};
 	       Pods->
 		   io:format("DBG:  Pods ~p~n",[{Pods,?MODULE,?LINE}]), 
-		   AllPodsApplSpecsToStart=[{PodNode,sd:call(db_etcd,db_pod_desired_state,read,[appl_spec_list,PodNode],5*1000)}||PodNode<-Pods,
+		   AllPodsApplSpecsToStart=[{PodNode,sd:call(etcd,db_pod_desired_state,read,[appl_spec_list,PodNode],5*1000)}||PodNode<-Pods,
 																  pang==net_adm:ping(PodNode)],
 		   io:format("DBG:  AllPodsApplSpecsToStart ~p~n",[{AllPodsApplSpecsToStart,?MODULE,?LINE}]), 
 		   PodsToStart=[PodNode||{PodNode,{ok,ApplSpecList}}<-AllPodsApplSpecsToStart,
@@ -185,15 +185,15 @@ create_pods_based_appl(ApplSpec)->
 %% @end
 %%--------------------------------------------------------------------
 create_pod(PodNode)->
-    Result=case sd:call(db_etcd,db_pod_desired_state,read,[parent_node,PodNode],5000) of
+    Result=case sd:call(etcd,db_pod_desired_state,read,[parent_node,PodNode],5000) of
 	       {ok,ParentNode}->
-		   case sd:call(db_etcd,db_pod_desired_state,read,[node_name,PodNode],5000) of
+		   case sd:call(etcd,db_pod_desired_state,read,[node_name,PodNode],5000) of
 		       {ok,NodeName}->
-			   case sd:call(db_etcd,db_pod_desired_state,read,[pod_dir,PodNode],5000) of
+			   case sd:call(etcd,db_pod_desired_state,read,[pod_dir,PodNode],5000) of
 			       {ok,PodDir}->
-				   case sd:call(db_etcd,db_pod_desired_state,read,[pa_args_list,PodNode],5000) of
+				   case sd:call(etcd,db_pod_desired_state,read,[pa_args_list,PodNode],5000) of
 				       {ok,PaArgsList}->
-					   case sd:call(db_etcd,db_pod_desired_state,read,[env_args,PodNode],5000) of
+					   case sd:call(etcd,db_pod_desired_state,read,[env_args,PodNode],5000) of
 					       {ok,EnvArgs}->
 						   rpc:call(node(),pod_server,create_pod,[ParentNode,NodeName,PodDir,PaArgsList,EnvArgs],25*1000);
 					       Reason ->
@@ -278,9 +278,9 @@ start_user_appls()->
 		   StoppedUserApplications=[{PodNode,ApplSpec,App}||{PodNode,ApplSpec,App}<-StoppedApplInfoLists,
 								    common/=App,
 								    sd/=App,
-								    db_etcd/=App,
+								    etcd/=App,
 								    nodelog/=App,
-								    infra_service/=App],
+								    control/=App],
 		   ApplCreateResult=create_appl(StoppedUserApplications,[]),
 		   [sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["Create start_user_appls Result :", CreateResult,?MODULE,?LINE]])||
 		       CreateResult<-ApplCreateResult];
