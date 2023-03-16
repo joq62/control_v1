@@ -33,7 +33,7 @@ start(ClusterSpec,SleepInterval)->
     timer:sleep(SleepInterval),
 %    ResultStartParents=debug1,
     ResultStartParents=rpc:call(node(),lib_control,start_parents,[],15*1000),
-    sd:cast(nodelog,nodelog,log,[notice,lib_control_STRING,?LINE,["ResultStartParents  : ",ResultStartParents,?MODULE,?LINE]]),
+ %   sd:cast(nodelog,nodelog,log,[notice,lib_control_STRING,?LINE,["ResultStartParents  : ",ResultStartParents,?MODULE,?LINE]]),
  %   ResultStartPods=debug2,
     ResultStartPods=rpc:call(node(),lib_control,start_pods,[],60*1000),
 %    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ResultStartPods  : ",ResultStartPods,?MODULE,?LINE]]),
