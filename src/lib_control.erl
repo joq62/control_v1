@@ -239,7 +239,7 @@ create_infra_appl({PodNode,ApplSpec,nodelog},_ClusterSpec)->
 					{Error,Reason}->
 					    {Error,Reason};
 					ok->	
-					    ok
+					    {ok,PodNode,ApplSpec,nodelog}
 				    end
 			    end
 		    end
@@ -252,7 +252,7 @@ create_infra_appl({PodNode,ApplSpec,etcd},_ClusterSpec) ->
 		{error,Reason}->
 		    {error,Reason};
 		[{ok,PodNode,ApplSpec,etcd}]->
-		    ok
+		    {ok,PodNode,ApplSpec,etcd}
 	    end,
     Result;
 create_infra_appl({PodNode,ApplSpec,control},ClusterSpec) ->
@@ -261,7 +261,7 @@ create_infra_appl({PodNode,ApplSpec,control},ClusterSpec) ->
 		{error,Reason}->
 		    {error,Reason};
 		[{ok,PodNode,ApplSpec,control}]->
-		    ok
+		    {ok,PodNode,ApplSpec,control}
 	    end,
     Result.
 
