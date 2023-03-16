@@ -39,7 +39,7 @@ start(ClusterSpec,SleepInterval)->
 %    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ResultStartPods  : ",ResultStartPods,?MODULE,?LINE]]),
     
  %   ResultStartInfraAppls=debug3,
-    ResultStartInfraAppls=rpc:call(node(),lib_control,start_infra_appls,[],60*1000),
+    ResultStartInfraAppls=rpc:call(node(),lib_control,start_infra_appls,[ClusterSpec],60*1000),
 %    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ResultStartInfraAppls  : ",ResultStartInfraAppls,?MODULE,?LINE]]),
 %    ResultStartUserAppls=debug4,
     ResultStartUserAppls=rpc:call(node(),lib_control,start_user_appls,[],60*1000), 

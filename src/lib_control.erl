@@ -222,7 +222,7 @@ create_infra_appl({PodNode,ApplSpec,nodelog},_ClusterSpec)->
 		{error,Reason}->
 		    {error,Reason};
 		[{ok,PodNode,ApplSpec,nodelog}]->
-		    case sd:call(db_etcd,db_pod_desired_state,read,[pod_dir,PodNode],5000) of
+		    case sd:call(etcd,db_pod_desired_state,read,[pod_dir,PodNode],5000) of
 			{badrpc,Reason}->
 			    {error,[badrpc,Reason]};
 			{error,Reason}->
@@ -247,31 +247,21 @@ create_infra_appl({PodNode,ApplSpec,nodelog},_ClusterSpec)->
     Result;
     
  
-create_infra_appl({PodNode,ApplSpec,db_etcd},_ClusterSpec) ->
+create_infra_appl({PodNode,ApplSpec,etcd},_ClusterSpec) ->
     Result= case create_appl([{PodNode,ApplSpec,db_etcd}]) of
 		{error,Reason}->
 		    {error,Reason};
-		[{ok,PodNode,ApplSpec,db_etcd}]->
-		    case rpc:call(PodNode,db_etcd,config,[],5000) of
-			{Error,Reason}->
-			    {Error,Reason};
-			ok->
-			    ok
-		    end
+		[{ok,PodNode,ApplSpec,etcd}]->
+		    ok
 	    end,
     Result;
-create_infra_appl({PodNode,ApplSpec,infra_service},ClusterSpec) ->
-    
-    Result= case create_appl([{PodNode,ApplSpec,infra_service}]) of
+create_infra_appl({PodNode,ApplSpec,control},ClusterSpec) ->
+    rpc:call(PodNode,application,set_env,[[{control,[{cluster_spec,ClusterSpec}]}]],5000),
+    Result= case create_appl([{PodNode,ApplSpec,control}]) of
 		{error,Reason}->
 		    {error,Reason};
-		[{ok,PodNode,ApplSpec,infra_service}]->
-		    case rpc:call(PodNode,infra_service,config,[ClusterSpec],5*5000) of
-			{Error,Reason}->
-			    {Error,Reason};
-			ok->
-			    ok
-		    end
+		[{ok,PodNode,ApplSpec,control}]->
+		    ok
 	    end,
     Result.
 
