@@ -49,9 +49,33 @@ start([ClusterSpec,_Arg2])->
     WhichApplications=[{Node,rpc:call(Node,application,which_applications,[],5000)}||Node<-[Nodelog|rpc:call(Nodelog,erlang,nodes,[],5000)]],
     io:format("WhichApplications ~p~n",[{lists:sort(WhichApplications),?MODULE,?LINE,?FUNCTION_NAME}]),
     io:format("Stop OK !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
+    loop(ClusterSpec,ControlNode),
+
   %  init:stop(),
   %  timer:sleep(2000),
     ok.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+notice()->
+    self()!notice.
+
+loop(ClusterSpec,ControlNode)->
+    receive
+	notice->
+	    R=rpc:call(ControlNode,sd,call,[nodelog,nodelog,read,[notice],5000],5000),
+	    io:format("noticed  ~p~n",[R]);
+	Unmatched ->
+	    io:format("Unmatched  ~p~n",[Unmatched])
+    end,
+    loop(ClusterSpec,ControlNode).
+    
+	
+
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

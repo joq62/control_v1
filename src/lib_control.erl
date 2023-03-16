@@ -138,12 +138,12 @@ start_infra_appls(ClusterSpec)->
 		      ResultCreate<- R_Nodelog],
 		  
 		  R_db_etcd=[{create_infra_appl({PodNode,ApplSpec,App},ClusterSpec),ApplSpec,PodNode}||{PodNode,ApplSpec,App}<-StoppedApplInfoLists,
-											 db_etcd==App],
+												       etcd==App],
 		  [sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ResultCreate db_etcd :",ResultCreate,?MODULE,?LINE]])||
 		      ResultCreate<-R_db_etcd],
 
 		  R_infra_service=[{create_infra_appl({PodNode,ApplSpec,App},ClusterSpec),ApplSpec,PodNode}||{PodNode,ApplSpec,App}<-StoppedApplInfoLists,
-													     infra_service==App],
+													     control==App],
 		  [sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ResultCreate db_etcd :",ResultCreate,?MODULE,?LINE]])||
 		      ResultCreate<-R_infra_service],
 		  [{nodelog,R_Nodelog},{db_etcd,R_db_etcd},{infra_service,R_infra_service}];
