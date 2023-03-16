@@ -93,9 +93,9 @@ handle_cast({orchestrate_result,
 	     ResultStartUserAppls}, State) ->
     
     
-    {ok,StoppedParents}=lib_parent:stopped_nodes(State#state.cluster_spec),
-    {ok,StoppedPod}=lib_pod:stopped_nodes(State#state.cluster_spec),
-    {ok,StoppedAppl}=lib_appl:stopped_appls(State#state.cluster_spec),
+    {ok,StoppedParents}=parent_server:stopped_nodes(),
+    {ok,StoppedPod}=pod_server:stopped_nodes(),
+    {ok,StoppedAppl}=appl_server:stopped_appls(),
     
     NewWantedState=case {StoppedParents,StoppedPod,StoppedAppl} of
 		       {[],[],[]}->
