@@ -248,7 +248,7 @@ create_infra_appl({PodNode,ApplSpec,nodelog},_ClusterSpec)->
     
  
 create_infra_appl({PodNode,ApplSpec,etcd},_ClusterSpec) ->
-    Result= case create_appl([{PodNode,ApplSpec,db_etcd}]) of
+    Result= case create_appl([{PodNode,ApplSpec,etcd}]) of
 		{error,Reason}->
 		    {error,Reason};
 		[{ok,PodNode,ApplSpec,etcd}]->
