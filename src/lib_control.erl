@@ -282,8 +282,9 @@ start_user_appls()->
 								    nodelog/=App,
 								    control/=App],
 		   ApplCreateResult=create_appl(StoppedUserApplications,[]),
-		   [sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["Create start_user_appls Result :", CreateResult,?MODULE,?LINE]])||
-		       CreateResult<-ApplCreateResult];
+		  % [sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["Create start_user_appls Result :", CreateResult,?MODULE,?LINE]])||
+		  %     CreateResult<-ApplCreateResult];
+		   ApplCreateResult;
 	       Reason->
 		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Create start_user_appls Result :", Reason,?MODULE,?LINE]]),
 		   {error,["appl_server,stopped_appls ",Reason,?MODULE,?LINE]}
