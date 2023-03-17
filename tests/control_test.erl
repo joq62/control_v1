@@ -38,13 +38,13 @@ start([ClusterSpec,_Arg2])->
     io:format("ParentNode OK !!! ~p~n",[{?MODULE,?LINE,?FUNCTION_NAME}]),
 
     {ok,Nodelog}=lib_install:start_nodelog(ClusterSpec),
-    io:format("Nodelog started OK !!! ~p~n",[{Nodelog,?MODULE,?LINE,?FUNCTION_NAME}]),
+    io:format("Nodelog started OK !!! ~p~n",[{Nodelog,rpc:call(Nodelog,erlang,nodes,[],5000),?MODULE,?LINE,?FUNCTION_NAME}]),
 
     {ok,EtcdNode}=lib_install:start_etcd(ClusterSpec),
-    io:format("EtcdNode started OK !!! ~p~n",[{EtcdNode,?MODULE,?LINE,?FUNCTION_NAME}]),
+    io:format("EtcdNode started OK !!! ~p~n",[{EtcdNode,rpc:call(Nodelog,erlang,nodes,[],5000),?MODULE,?LINE,?FUNCTION_NAME}]),
 
     {ok,ControlNode}=lib_install:start_control(ClusterSpec),
-    io:format("ControlNode started OK !!! ~p~n",[{ControlNode,?MODULE,?LINE,?FUNCTION_NAME}]),
+    io:format("ControlNode started OK !!! ~p~n",[{ControlNode,rpc:call(ControlNode,erlang,nodes,[],5000),?MODULE,?LINE,?FUNCTION_NAME}]),
    
     WhichApplications=[{Node,rpc:call(Node,application,which_applications,[],5000)}||Node<-[Nodelog|rpc:call(Nodelog,erlang,nodes,[],5000)]],
     io:format("WhichApplications ~p~n",[{lists:sort(WhichApplications),?MODULE,?LINE,?FUNCTION_NAME}]),
@@ -98,7 +98,7 @@ start_etcd(ClusterSpec)->
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
-start_nodelog(ClusterSpec)->
+start_nodelog(ClusterSpec,Parents)->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
     %%-- nodelog -------------------------------------------------------------
 
@@ -110,6 +110,9 @@ start_nodelog(ClusterSpec)->
     {ok,ActiveApplsInfoList_2}=appl_server:active_appls(),
     [{NodelogNode,NodelogApp}]=[{Node,App}||{Node,_ApplSpec,App}<-ActiveApplsInfoList_2,
 					    nodelog==App],
+
+    [rpc:call(Parent,net_adm,ping,[Pod],5000)||Parent<-Parents,
+					       Pod<-[NodelogNode]],
     false=rpc:call(NodelogNode,nodelog,is_config,[],5000),
     {ok,PodDir}=db_pod_desired_state:read(pod_dir,NodelogNode),
     PathLogDir=filename:join(PodDir,?LogDir),
@@ -134,6 +137,7 @@ start_common_sd(ActivePods)->
     SdList=[{Pod,"sd",sd}||Pod<-ActivePods],
     []=[{R,Pod,ApplSpec,App}||{R,Pod,ApplSpec,App}<-create_appl(SdList),
 	   ok/=R],
+    
    
     ok.
     
@@ -197,9 +201,9 @@ start_parents(ClusterSpec)->
     {ok,StoppedParents}=parent_server:stopped_nodes(),
     StartParents=[{parent_server:create_node(Parent),Parent}||Parent<-StoppedParents],
     {ok,ActiveParents}=parent_server:active_nodes(),
-    [{net_adm:ping(Pod1),rpc:call(Pod1,net_adm,ping,[Pod2],5000)}||Pod1<-ActiveParents,
-								   Pod2<-ActiveParents,
-								   Pod1/=Pod2],
+    [{rpc:call(Pod1,net_adm,ping,[Pod2],5000)}||Pod1<-ActiveParents,
+						Pod2<-ActiveParents,
+						Pod1/=Pod2],
     {ok,ActiveParents}.
 
 

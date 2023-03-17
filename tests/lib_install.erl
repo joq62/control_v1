@@ -43,6 +43,8 @@ start_control(ClusterSpec)->
 					  App==WantedApp],
     %% Creat the initial pod
     ok=lib_pod:create_node(ControlNode),
+    []=[{error,[Parent]}||Parent<-db_parent_desired_state:pods(ClusterSpec),
+		       pong/=rpc:call(Parent,net_adm,ping,[ControlNode],5000)],
     
     %% start common and sd
     ok=lib_appl:create_appl("common",ControlNode),
@@ -50,7 +52,7 @@ start_control(ClusterSpec)->
     ok=lib_appl:create_appl("sd",ControlNode),
     pong=rpc:call(ControlNode,sd,ping,[],5000),
 
-    %% start etcd
+    %% start control
     rpc:call(ControlNode,application,load,[control],5000),
     ok=rpc:call(ControlNode,application,set_env,[[{control,[{cluster_spec,ClusterSpec}]}]],5000),
     ok=lib_appl:create_appl("control",ControlNode),
@@ -71,7 +73,8 @@ start_etcd(ClusterSpec)->
 					  App==WantedApp],
     %% Creat the initial pod
     ok=lib_pod:create_node(EtcdNode),
-    
+    []=[{error,[Parent]}||Parent<-db_parent_desired_state:pods(ClusterSpec),
+			   pong/=rpc:call(Parent,net_adm,ping,[EtcdNode],5000)],
     %% start common and sd
     ok=lib_appl:create_appl("common",EtcdNode),
     pong=rpc:call(EtcdNode,common,ping,[],5000),
@@ -98,6 +101,8 @@ start_nodelog(ClusterSpec)->
 					  App==WantedApp],
     %% Creat the initial pod
     ok=lib_pod:create_node(NodelogNode),
+    []=[{error,[Parent]}||Parent<-db_parent_desired_state:pods(ClusterSpec),
+			  pong/=rpc:call(Parent,net_adm,ping,[NodelogNode],5000)],
     
     %% start common and sd
     ok=lib_appl:create_appl("common",NodelogNode),
@@ -148,6 +153,12 @@ pod_app_list({PodNode,[ApplSpec|T]},Acc)->
     [lib_parent:create_node(Node)||Node<-ParentNodes],
     []=[{error,[not_started,Node]}||Node<-ParentNodes,
 				    false==vm:check_started_node(Node)],
+    [rpc:call(Node1,net_adm,ping,[Node2],5000)||Node1<-ParentNodes,
+						Node2<-ParentNodes,
+						Node1/=Node2],
+    
+						
+    
     ok.
 
 %%--------------------------------------------------------------------
