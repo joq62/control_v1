@@ -34,10 +34,11 @@ start(ClusterSpec,true)->
 
 start(_ClusterSpec,false,SleepInterval)->
     timer:sleep(SleepInterval),
-    rpc:cast(node(),control,orchestrate_result,[[],
-						[],
-						[],
-						[]]);
+    rpc:cast(node(),control,orchestrate_result,[{ok,[]},
+						{ok,[]},
+						{ok,[]},
+						{ok,[]}
+					       ]);
 
 start(ClusterSpec,true,SleepInterval)->
  %   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG orchistrate  : ",time(),?MODULE,?LINE]]),
