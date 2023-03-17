@@ -11,8 +11,8 @@
 -define(SleepInterval,60*1000).
 %% API
 -export([
-	 start/1,
-	 start/2
+	 start/2,
+	 start/3
 	]).
 
 %%%===================================================================
@@ -24,11 +24,22 @@
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
-start(ClusterSpec)->
+start(ClusterSpec,false)->
   %  sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["start_orchistrate",time(),node()]]),
-    start(ClusterSpec,?SleepInterval).
+    start(ClusterSpec,false,?SleepInterval);
 
-start(ClusterSpec,SleepInterval)->
+start(ClusterSpec,true)->
+  %  sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["start_orchistrate",time(),node()]]),
+    start(ClusterSpec,true,?SleepInterval).
+
+start(_ClusterSpec,false,SleepInterval)->
+    timer:sleep(SleepInterval),
+    rpc:cast(node(),control,orchestrate_result,[[],
+						[],
+						[],
+						[]]);
+
+start(ClusterSpec,true,SleepInterval)->
  %   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG orchistrate  : ",time(),?MODULE,?LINE]]),
     timer:sleep(SleepInterval),
 %    ResultStartParents=debug1,

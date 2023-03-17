@@ -1,1 +1,4 @@
-[].
+[{<<"leader_lib">>,
+  {git,"https://github.com/joq62/leader_lib.git",
+       {ref,"ed844995c0ce1fee5750c40b5b7ae3cfd03fbf1f"}},
+  0}].

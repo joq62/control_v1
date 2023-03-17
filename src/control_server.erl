@@ -11,7 +11,7 @@
 %% Include files
 %% --------------------------------------------------------------------
 
-
+-define(App,control).
 %% --------------------------------------------------------------------
 
 
@@ -23,6 +23,7 @@
 
 %%-------------------------------------------------------------------
 -record(state,{
+	       leader_pid,
 	       cluster_spec,
 	       wanted_state
 	      }).
@@ -48,9 +49,14 @@
 %% --------------------------------------------------------------------
 init(ClusterSpec) -> 
     io:format(" ~p~n",[{ClusterSpec,?MODULE,?LINE}]),
-    Result=rpc:cast(node(),orchestrate,start,[ClusterSpec]),
+    {ok,LeaderPid}=leader:start(?App),
+    timer:sleep(2000),
+    IsLeader=leader:am_i_leader(LeaderPid,node(),5000),
+    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["IsLeader ",IsLeader,node()]]),
+    Result=rpc:cast(node(),orchestrate,start,[ClusterSpec,IsLeader]),
     sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["Servere started",Result,node()]]),
     {ok, #state{cluster_spec=ClusterSpec,
+		leader_pid=LeaderPid,
 		wanted_state=undefined}}.   
  
 
@@ -64,6 +70,21 @@ init(ClusterSpec) ->
 %%          {stop, Reason, Reply, State}   | (terminate/2 is called)
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
+%% Leader API functions
+handle_call({am_i_leader,Node}, _From, State) ->
+    Reply = leader:am_i_leader(State#state.leader_pid,Node,5000),
+    {reply, Reply, State};
+
+handle_call({who_is_leader}, _From, State) ->
+    Reply = leader:who_is_leader(State#state.leader_pid,5000),
+    {reply, Reply, State};
+
+handle_call({ping_leader}, _From, State) ->
+%    io:format("ping_leader ~p~n",[{?MODULE,?LINE}]),
+    Reply = leader:ping(State#state.leader_pid,5000),
+    {reply, Reply, State};
+
+%% gen_server API
 handle_call({start_orchistrate},_From, State) ->
     sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["start_orchistrate",time(),node()]]),
     Reply= rpc:cast(node(),orchestrate,start,[State#state.cluster_spec]),
@@ -86,6 +107,21 @@ handle_call(Request, From, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
+%% Leader API functions
+handle_cast({i_am_alive,MyNode}, State) ->
+    leader:i_am_alive(State#state.leader_pid,MyNode),
+    {noreply, State};
+
+handle_cast({declare_victory,LeaderNode}, State) ->
+    leader:declare_victory(State#state.leader_pid,LeaderNode),
+    {noreply, State};
+
+handle_cast({start_election}, State) ->
+    leader:start_election(State#state.leader_pid),
+    {noreply, State};
+
+%% gen_server API functions
+
 handle_cast({orchestrate_result,
 	     ResultStartParents,
 	     ResultStartPods,
@@ -115,7 +151,9 @@ handle_cast({orchestrate_result,
 								      ResultStartUserAppls,
 								      ?MODULE,?LINE]])
     end,
-    rpc:cast(node(),orchestrate,start,[State#state.cluster_spec]),
+    IsLeader=leader:am_i_leader(State#state.leader_pid,node(),5000),
+    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["IsLeader ",IsLeader,node()]]),
+    rpc:cast(node(),orchestrate,start,[State#state.cluster_spec,IsLeader]),
     {noreply, State#state{wanted_state=NewWantedState}};
 
 handle_cast(Msg, State) ->
