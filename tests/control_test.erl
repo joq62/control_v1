@@ -48,8 +48,12 @@ start([ClusterSpec,_Arg2])->
    
     WhichApplications=[{Node,rpc:call(Node,application,which_applications,[],5000)}||Node<-[Nodelog|rpc:call(Nodelog,erlang,nodes,[],5000)]],
     io:format("WhichApplications ~p~n",[{lists:sort(WhichApplications),?MODULE,?LINE,?FUNCTION_NAME}]),
+    
     io:format("Stop OK !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    loop(ClusterSpec,ControlNode),
+    timer:sleep(60*1000),
+    io:format("60 sec !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
+
+    
 
   %  init:stop(),
   %  timer:sleep(2000),

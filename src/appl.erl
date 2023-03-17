@@ -154,6 +154,8 @@ load(Node,App,Paths)->
 									true/=rpc:call(Node,code,add_patha,[Path],5000)],
     case AddedPathsResult of
 	[]-> % ok
+	    rpc:call(Node,application,stop,[App],5000),
+	    rpc:call(Node,application,unload,[App],5000),
 	    case rpc:call(Node,application,load,[App],5000) of
 		{badrpc,Reason}->
 		    {error,[badrpc,Reason,App]};
