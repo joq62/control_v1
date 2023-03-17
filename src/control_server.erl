@@ -72,10 +72,12 @@ init(ClusterSpec) ->
 %% --------------------------------------------------------------------
 %% Leader API functions
 handle_call({am_i_leader,Node}, _From, State) ->
+    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["am_i_leader ",Node," at node ",node()]]),
     Reply = leader:am_i_leader(State#state.leader_pid,Node,5000),
     {reply, Reply, State};
 
 handle_call({who_is_leader}, _From, State) ->
+    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["who_is_leader "," at node ",node()]]),
     Reply = leader:who_is_leader(State#state.leader_pid,5000),
     {reply, Reply, State};
 
@@ -109,15 +111,17 @@ handle_call(Request, From, State) ->
 %% --------------------------------------------------------------------
 %% Leader API functions
 handle_cast({i_am_alive,MyNode}, State) ->
+    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["i_am_alive ", MyNode," at node ",node()]]),
     leader:i_am_alive(State#state.leader_pid,MyNode),
     {noreply, State};
 
 handle_cast({declare_victory,LeaderNode}, State) ->
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["declare_victory ",LeaderNode,node()]]),
+    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["declare_victory ",LeaderNode," at node ",node()]]),
     leader:declare_victory(State#state.leader_pid,LeaderNode),
     {noreply, State};
 
 handle_cast({start_election}, State) ->
+    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["start_election "," at node ",node()]]),
     leader:start_election(State#state.leader_pid),
     {noreply, State};
 

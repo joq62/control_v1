@@ -59,7 +59,7 @@ start(ClusterSpec,true,SleepInterval)->
     ResultStartUserAppls=rpc:call(node(),lib_control,start_user_appls,[],60*1000), 
 %    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ResultStartUserAppls  : ",ResultStartUserAppls,?MODULE,?LINE]]),
 
-
+    timer:sleep(3000), %% If there is an election started
     rpc:cast(node(),control,orchestrate_result,[ResultStartParents,
 						      ResultStartPods,
 						      ResultStartInfraAppls,
