@@ -25,7 +25,7 @@
 %% @end
 %%--------------------------------------------------------------------
 start(ClusterSpec,false)->
-  %  sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["start_orchistrate",time(),node()]]),
+   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["IsLEader",false,node()]]),
     start(ClusterSpec,false,?SleepInterval);
 
 start(ClusterSpec,true)->
