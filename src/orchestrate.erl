@@ -24,24 +24,22 @@
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
-start(ClusterSpec,false)->
+start(ClusterSpec,LeaderPid)->
    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["IsLeader",false,node()]]),
-    start(ClusterSpec,false,?SleepInterval);
+    start(ClusterSpec,LeaderPid,?SleepInterval).
 
-start(ClusterSpec,true)->
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["IsLeader",true,node()]]),
-    start(ClusterSpec,true,?SleepInterval).
-
-start(_ClusterSpec,false,SleepInterval)->
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["IsLeader",false,node()]]),
+start(ClusterSpec,LeaderPid,SleepInterval)->
     timer:sleep(SleepInterval),
-    rpc:cast(node(),control,orchestrate_result,[{ok,[]},
-						{ok,[]},
-						{ok,[]},
-						{ok,[]}
-					       ]);
+    Result=case leader:am_i_leader(LeaderPid,node(),5000) of
+	       false->
+		   [[],[],[],[],[]];
+	       true->
+		   orchistrate(ClusterSpec,SleepInterval)
+	   end,
+    rpc:cast(node(),control,orchestrate_result,Result).
 
-start(ClusterSpec,true,SleepInterval)->
+
+orchistrate(ClusterSpec,SleepInterval)->
     sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["IsLeader",true,node()]]),
  %   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG orchistrate  : ",time(),?MODULE,?LINE]]),
     timer:sleep(SleepInterval),
@@ -59,11 +57,8 @@ start(ClusterSpec,true,SleepInterval)->
     ResultStartUserAppls=rpc:call(node(),lib_control,start_user_appls,[],60*1000), 
 %    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ResultStartUserAppls  : ",ResultStartUserAppls,?MODULE,?LINE]]),
 
-    timer:sleep(3000), %% If there is an election started
-    rpc:cast(node(),control,orchestrate_result,[ResultStartParents,
-						      ResultStartPods,
-						      ResultStartInfraAppls,
-						      ResultStartUserAppls]).
+  %  timer:sleep(3000), %% If there is an election started
+    [ResultStartParents,ResultStartPods,ResultStartInfraAppls,ResultStartUserAppls].
     
    
 

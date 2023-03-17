@@ -50,14 +50,12 @@
 init(ClusterSpec) -> 
     io:format(" ~p~n",[{ClusterSpec,?MODULE,?LINE}]),
     {ok,LeaderPid}=leader:start(?App),
-    timer:sleep(2000),
-    IsLeader=leader:am_i_leader(LeaderPid,node(),5000),
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["IsLeader ",IsLeader,node()]]),
-    Result=rpc:cast(node(),orchestrate,start,[ClusterSpec,IsLeader]),
+    Result=rpc:cast(node(),orchestrate,start,[ClusterSpec,
+				       LeaderPid]),
     sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["Servere started",Result,node()]]),
     {ok, #state{cluster_spec=ClusterSpec,
 		leader_pid=LeaderPid,
-		wanted_state=undefined}}.   
+		wanted_state=undefined},0}.   
  
 
 %% --------------------------------------------------------------------
@@ -160,7 +158,8 @@ handle_cast({orchestrate_result,
     end,
     IsLeader=leader:am_i_leader(State#state.leader_pid,node(),5000),
     sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["IsLeader ",IsLeader,node()]]),
-    rpc:cast(node(),orchestrate,start,[State#state.cluster_spec,IsLeader]),
+    rpc:cast(node(),orchestrate,start,[State#state.cluster_spec,
+				       State#state.leader_pid]),
     {noreply, State#state{wanted_state=NewWantedState}};
 
 handle_cast(Msg, State) ->
