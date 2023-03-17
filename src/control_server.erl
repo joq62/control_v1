@@ -113,6 +113,7 @@ handle_cast({i_am_alive,MyNode}, State) ->
     {noreply, State};
 
 handle_cast({declare_victory,LeaderNode}, State) ->
+    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["declare_victory ",LeaderNode,node()]]),
     leader:declare_victory(State#state.leader_pid,LeaderNode),
     {noreply, State};
 
