@@ -127,7 +127,9 @@ handle_cast({orchestrate_result,
 	     ResultStartPods,
 	     ResultStartInfraAppls,
 	     ResultStartUserAppls}, State) ->
-    
+
+    IsLeader=leader:am_i_leader(State#state.leader_pid,node(),5000),
+    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["IsLeader ",IsLeader,node()]]),
     
     {ok,StoppedParents}=parent_server:stopped_nodes(),
     {ok,StoppedPod}=pod_server:stopped_nodes(),
