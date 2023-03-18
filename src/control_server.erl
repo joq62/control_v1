@@ -47,12 +47,13 @@
 %%          ignore               |
 %%          {stop, Reason}
 %% --------------------------------------------------------------------
+%init(ClusterSpec) -> 
 init(ClusterSpec) -> 
     io:format(" ~p~n",[{ClusterSpec,?MODULE,?LINE}]),
     {ok,LeaderPid}=leader:start(?App),
-    Result=rpc:cast(node(),orchestrate,start,[ClusterSpec,
+    rpc:cast(node(),orchestrate,start,[ClusterSpec,
 				       LeaderPid]),
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["Servere started",Result,node()]]),
+    sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"server start",[]]),
     {ok, #state{cluster_spec=ClusterSpec,
 		leader_pid=LeaderPid,
 		wanted_state=undefined},0}.   
@@ -85,18 +86,13 @@ handle_call({ping_leader}, _From, State) ->
     {reply, Reply, State};
 
 %% gen_server API
-handle_call({start_orchistrate},_From, State) ->
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["start_orchistrate",time(),node()]]),
-    Reply= rpc:cast(node(),orchestrate,start,[State#state.cluster_spec]),
-    {reply, Reply, State};
-
 handle_call({ping},_From, State) ->
     sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ping",node()]]),
     Reply=pong,
     {reply, Reply, State};
 
 handle_call(Request, From, State) ->
-    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Request,?MODULE,?LINE]]),
+    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Request,From]]),
     Reply = {unmatched_signal,?MODULE,Request,From},
     {reply, Reply, State}.
 
@@ -114,12 +110,12 @@ handle_cast({i_am_alive,MyNode}, State) ->
     {noreply, State};
 
 handle_cast({declare_victory,LeaderNode}, State) ->
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["declare_victory ",LeaderNode," at node ",node()]]),
+    sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"declare_victory from ",[LeaderNode]]),
     leader:declare_victory(State#state.leader_pid,LeaderNode),
     {noreply, State};
 
 handle_cast({start_election}, State) ->
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["start_election "," at node ",node()]]),
+    sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"start_election ",[]]),
     leader:start_election(State#state.leader_pid),
     {noreply, State};
 
@@ -131,9 +127,7 @@ handle_cast({orchestrate_result,
 	     ResultStartInfraAppls,
 	     ResultStartUserAppls}, State) ->
 
-  %  IsLeader=leader:am_i_leader(State#state.leader_pid,node(),5000),
-  %  sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["IsLeader ",IsLeader,node()]]),
-    
+ 
     {ok,StoppedParents}=parent_server:stopped_nodes(),
     {ok,StoppedPod}=pod_server:stopped_nodes(),
     {ok,StoppedAppl}=appl_server:stopped_appls(),
@@ -147,22 +141,20 @@ handle_cast({orchestrate_result,
     case State#state.wanted_state of
 	NewWantedState->
 	    ok;
-	_->	    
-	    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["New state:",date(),time(),
-								      NewWantedState,
-								      ResultStartParents,
-								      ResultStartPods,
-								      ResultStartInfraAppls,
-								      ResultStartUserAppls,
-								      ?MODULE,?LINE]])
+	_->	 
+	    sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,
+				    "New State ",[NewWantedState,
+						  ResultStartParents,
+						  ResultStartPods,
+						  ResultStartInfraAppls,
+						  ResultStartUserAppls]])   
     end,
     rpc:cast(node(),orchestrate,start,[State#state.cluster_spec,
 				       State#state.leader_pid]),
     {noreply, State#state{wanted_state=NewWantedState}};
 
 handle_cast(Msg, State) ->
-    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Msg,node()]]),
-    io:format("unmatched match cast ~p~n",[{Msg,?MODULE,?LINE}]),
+    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Msg]]),
     {noreply, State}.
 
 %% --------------------------------------------------------------------
@@ -173,7 +165,7 @@ handle_cast(Msg, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
 handle_info(Info, State) ->
-    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Info,node()]]),
+    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Info]]),
     {noreply, State}.
 
 %% --------------------------------------------------------------------

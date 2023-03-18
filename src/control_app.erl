@@ -8,15 +8,10 @@
 -behaviour(application).
 
 -export([start/2, stop/1]).
--define(Application,control).
 
 start(_StartType, _StartArgs) ->
-    case application:get_env(?Application,cluster_spec) of
-	undefined->
-	    {error,[cluster_spec, undefined]};
-	{ok,ClusterSpec}->
-	    control_sup:start_link(ClusterSpec)
-    end.
+    {ok,ClusterSpec}=sd:call(etcd,db_pod_desired_state,read,[cluster_spec,node()],5000),
+    {ok,_}=control_sup:start_link(ClusterSpec).
 
 
 stop(_State) ->

@@ -37,22 +37,23 @@ start([ClusterSpec,_Arg2])->
     ok=lib_install:start_parents(ClusterSpec),
     io:format("ParentNode OK !!! ~p~n",[{?MODULE,?LINE,?FUNCTION_NAME}]),
 
-    {ok,Nodelog}=lib_install:start_nodelog(ClusterSpec),
-    io:format("Nodelog started OK !!! ~p~n",[{Nodelog,rpc:call(Nodelog,erlang,nodes,[],5000),?MODULE,?LINE,?FUNCTION_NAME}]),
+    {ok,LogNode}=lib_install:start_log(ClusterSpec),
+    io:format("Log started OK !!! ~p~n",[{LogNode,rpc:call(LogNode,erlang,nodes,[],5000),?MODULE,?LINE,?FUNCTION_NAME}]),
 
     {ok,EtcdNode}=lib_install:start_etcd(ClusterSpec),
-    io:format("EtcdNode started OK !!! ~p~n",[{EtcdNode,rpc:call(Nodelog,erlang,nodes,[],5000),?MODULE,?LINE,?FUNCTION_NAME}]),
+    io:format("EtcdNode started OK !!! ~p~n",[{EtcdNode,rpc:call(EtcdNode,erlang,nodes,[],5000),?MODULE,?LINE,?FUNCTION_NAME}]),
 
     {ok,ControlNode}=lib_install:start_control(ClusterSpec),
     io:format("ControlNode started OK !!! ~p~n",[{ControlNode,rpc:call(ControlNode,erlang,nodes,[],5000),?MODULE,?LINE,?FUNCTION_NAME}]),
    
-    WhichApplications=[{Node,rpc:call(Node,application,which_applications,[],5000)}||Node<-[Nodelog|rpc:call(Nodelog,erlang,nodes,[],5000)]],
+    WhichApplications=[{Node,rpc:call(Node,application,which_applications,[],5000)}||Node<-[LogNode|rpc:call(LogNode,erlang,nodes,[],5000)]],
     io:format("WhichApplications ~p~n",[{lists:sort(WhichApplications),?MODULE,?LINE,?FUNCTION_NAME}]),
     
     io:format("Stop OK !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
     timer:sleep(60*1000),
     io:format("60 sec !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-
+    loop(ClusterSpec,LogNode,[]),
+    
     
 
   %  init:stop(),
@@ -68,15 +69,22 @@ start([ClusterSpec,_Arg2])->
 notice()->
     self()!notice.
 
-loop(ClusterSpec,ControlNode)->
-    receive
-	notice->
-	    R=rpc:call(ControlNode,sd,call,[nodelog,nodelog,read,[notice],5000],5000),
-	    io:format("noticed  ~p~n",[R]);
-	Unmatched ->
-	    io:format("Unmatched  ~p~n",[Unmatched])
-    end,
-    loop(ClusterSpec,ControlNode).
+loop(ClusterSpec,LogNode,PreviousNotice)->
+    Notice=rpc:call(LogNode,log,all_parsed,[notice],5000),
+    NewPreviousNotice=case Notice==PreviousNotice of
+			  true->
+			      PreviousNotice;
+			  false->
+			      io:format(" ****************************************************** ~n"),
+			      io:format("~p~n ",[{date(),time()}]),
+			      NewItems=[Item||Item<-Notice,
+					      false==lists:member(Item,PreviousNotice)],
+			      io:format(" ~p~n",[NewItems]),
+			      io:format("~n "),
+			      Notice
+		      end,
+    timer:sleep(60*1000),
+    loop(ClusterSpec,LogNode,NewPreviousNotice).
     
 	
 

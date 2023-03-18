@@ -20,6 +20,7 @@
 	 ensure_right_cookie/1,
 	 start_parents/0,
 	 start_pods/0,
+	 start_appls/0,
 	 start_infra_appls/1,
 	 start_user_appls/0 
 	]).
@@ -120,6 +121,25 @@ start_pods()->
 	   end,
     Result.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+start_appls()->
+    Result=case rpc:call(node(),appl_server,stopped_appls,[],15*1000) of
+	       {ok,[]}->
+		   ok;
+	       {ok,StoppedApplInfoLists}->			  
+		   ApplCreateResult=create_appl(StoppedApplInfoLists,[]),
+		  % [sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["Create start_user_appls Result :", CreateResult,?MODULE,?LINE]])||
+		  %     CreateResult<-ApplCreateResult];
+		   ApplCreateResult;
+	       Reason->
+		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Create start_appls Result :", Reason,?MODULE,?LINE]]),
+		   {error,["appl_server,stopped_appls ",Reason,?MODULE,?LINE]}
+	   end,
+    Result.
 
 %%--------------------------------------------------------------------
 %% @doc
