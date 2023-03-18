@@ -1,4 +1,4 @@
 [{<<"leader_lib">>,
   {git,"https://github.com/joq62/leader_lib.git",
-       {ref,"807712d13b8840d1369cccbdd4c796aa776d6ac5"}},
+       {ref,"c3ed183efa0047e2f86ad429827461edf23fe8d5"}},
   0}].

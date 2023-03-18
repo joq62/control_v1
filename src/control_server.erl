@@ -70,12 +70,12 @@ init(ClusterSpec) ->
 %% --------------------------------------------------------------------
 %% Leader API functions
 handle_call({am_i_leader,Node}, _From, State) ->
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["am_i_leader ",Node," at node ",node()]]),
+ %   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["am_i_leader ",Node," at node ",node()]]),
     Reply = leader:am_i_leader(State#state.leader_pid,Node,5000),
     {reply, Reply, State};
 
 handle_call({who_is_leader}, _From, State) ->
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["who_is_leader "," at node ",node()]]),
+ %   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["who_is_leader "," at node ",node()]]),
     Reply = leader:who_is_leader(State#state.leader_pid,5000),
     {reply, Reply, State};
 
@@ -109,7 +109,7 @@ handle_call(Request, From, State) ->
 %% --------------------------------------------------------------------
 %% Leader API functions
 handle_cast({i_am_alive,MyNode}, State) ->
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["i_am_alive ", MyNode," at node ",node()]]),
+ %   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["i_am_alive ", MyNode," at node ",node()]]),
     leader:i_am_alive(State#state.leader_pid,MyNode),
     {noreply, State};
 
@@ -131,8 +131,8 @@ handle_cast({orchestrate_result,
 	     ResultStartInfraAppls,
 	     ResultStartUserAppls}, State) ->
 
-    IsLeader=leader:am_i_leader(State#state.leader_pid,node(),5000),
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["IsLeader ",IsLeader,node()]]),
+  %  IsLeader=leader:am_i_leader(State#state.leader_pid,node(),5000),
+  %  sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["IsLeader ",IsLeader,node()]]),
     
     {ok,StoppedParents}=parent_server:stopped_nodes(),
     {ok,StoppedPod}=pod_server:stopped_nodes(),
@@ -156,14 +156,12 @@ handle_cast({orchestrate_result,
 								      ResultStartUserAppls,
 								      ?MODULE,?LINE]])
     end,
-    IsLeader=leader:am_i_leader(State#state.leader_pid,node(),5000),
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["IsLeader ",IsLeader,node()]]),
     rpc:cast(node(),orchestrate,start,[State#state.cluster_spec,
 				       State#state.leader_pid]),
     {noreply, State#state{wanted_state=NewWantedState}};
 
 handle_cast(Msg, State) ->
-    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Msg,?MODULE,?LINE]]),
+    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Msg,node()]]),
     io:format("unmatched match cast ~p~n",[{Msg,?MODULE,?LINE}]),
     {noreply, State}.
 
@@ -175,7 +173,7 @@ handle_cast(Msg, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
 handle_info(Info, State) ->
-    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Info,?MODULE,?LINE]]),
+    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Info,node()]]),
     {noreply, State}.
 
 %% --------------------------------------------------------------------
