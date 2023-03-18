@@ -167,7 +167,7 @@ create_node(ParentNode,NodeName,PodDir,PaArgsList,EnvArgs)->
 								     true/=rpc:call(SlaveNode,code,add_patha,[Path],5000)],
 						   case R of
 						       []->
-							   ok;
+							  ok;
 						       _ ->
 							   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed add paths ",[R]]),
 							   {error,[R]}

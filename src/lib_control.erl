@@ -46,6 +46,10 @@ start_parents()->
 		   {ok,[]};
 	       {ok,StoppedParents}->
 		   CreateResult=[{rpc:call(node(),parent_server,create_node,[Parent],25*1000),Parent}||Parent<-StoppedParents],
+		   [sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to create node for Pod ",[Reason,Pod]])||
+		       {{error,Reason},Pod}<-CreateResult],
+		   [sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"Succeeded to Creating pod ",[Pod]])||
+		       {ok,Pod}<-CreateResult],
 		   case rpc:call(node(),parent_server,active_nodes,[],20*1000) of
 		       {ok,ActiveParents}->
 			   _R1=[{net_adm:ping(Pod1),rpc:call(Pod1,net_adm,ping,[Pod2],5000)}||Pod1<-ActiveParents,
@@ -74,11 +78,11 @@ start_pods()->
 		   ok;
 	       {ok,Stopped}->
 		   CreateResult=[{rpc:call(node(),pod_server,create_node,[Pod],25*1000),Pod}||Pod<-Stopped],
-		   [sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to create node for Pod ",[CreateRes,Pod]])||
-		       {CreateRes,Pod}<-CreateResult,
-		       {ok,Pod}/=CreateRes],
-		   [sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Succeeded to Creating pod ",[Pod]])||
+		   [sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to create node for Pod ",[Reason,Pod]])||
+		       {{error,Reason},Pod}<-CreateResult],
+		   [sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"Succeeded to Creating pod ",[Pod]])||
 		       {ok,Pod}<-CreateResult],
+		    
 		   _CommonStart=[{rpc:call(node(),appl_server,create_appl,["common",Pod],25*1000),Pod}||{ok,Pod}<-CreateResult],
 		   _SdStart=[{rpc:call(node(),appl_server,create_appl,["sd",Pod],25*1000),Pod}||{ok,Pod}<-CreateResult],
 		   case rpc:call(node(),pod_server,active_nodes,[],15*1000) of
