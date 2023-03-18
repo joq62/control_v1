@@ -25,7 +25,7 @@
 %% @end
 %%--------------------------------------------------------------------
 start(ClusterSpec,LeaderPid)->
-   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["LeaderPid",LeaderPid,node()]]),
+%   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["LeaderPid",LeaderPid,node()]]),
     start(ClusterSpec,LeaderPid,?SleepInterval).
 
 start(ClusterSpec,LeaderPid,SleepInterval)->
@@ -35,14 +35,14 @@ start(ClusterSpec,LeaderPid,SleepInterval)->
 		   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["am_i_leader",false,node()]]),
 		   [[],[],[],[],[]];
 	       true->
-		   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["am_i_leader",true,node()]]),
+	%	   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["am_i_leader",true,node()]]),
 		   orchistrate(ClusterSpec,SleepInterval)
 	   end,
     rpc:cast(node(),control,orchestrate_result,Result).
 
 
 orchistrate(ClusterSpec,SleepInterval)->
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["IsLeader",true,node()]]),
+ %   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["IsLeader",true,node()]]),
  %   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG orchistrate  : ",time(),?MODULE,?LINE]]),
     timer:sleep(SleepInterval),
 %    ResultStartParents=debug1,
