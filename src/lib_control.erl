@@ -7,10 +7,8 @@
 %%% Created : 18 Jan 2023 by c50 <joq62@c50>
 %%%-------------------------------------------------------------------
 -module(lib_control).
-
-
--define(LogDir,"log_dir").
--define(LogFileName,"file.logs").
+-define(LogDir,glurk).
+-define(LogFileName,glurk).
 
 %% API
 -export([
@@ -45,42 +43,24 @@
 start_parents()->
     Result=case rpc:call(node(),parent_server,stopped_nodes,[],10*1000) of
 	       {ok,[]}->
-	%	   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: No stopped Parents : ",[],node(),?MODULE,?LINE]]),    
 		   {ok,[]};
 	       {ok,StoppedParents}->
-	%	   io:format("StoppedParents  ~p~n",[{StoppedParents,?MODULE,?LINE}]),
-		   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: StoppedParents : ",StoppedParents,node(),?MODULE,?LINE]]),    
-		   
 		   CreateResult=[{rpc:call(node(),parent_server,create_node,[Parent],25*1000),Parent}||Parent<-StoppedParents],
-	%	   io:format("CreateResult  ~p~n",[{CreateResult,?MODULE,?LINE}]),
-	%	   io:format("Ping parents  ~p~n",[{[{net_adm:ping(N),N}||N<-StoppedParents],?MODULE,?LINE}]),
-		   
-	%	   [sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Creating parent node :", CreateRes,ParentNode,?MODULE,?LINE]])||
-	%	       {CreateRes,ParentNode}<-CreateResult,
-	%	       {ok,ParentNode}/=CreateRes],
 		   case rpc:call(node(),parent_server,active_nodes,[],20*1000) of
 		       {ok,ActiveParents}->
-			   io:format("ActiveParents  ~p~n",[{ActiveParents,?MODULE,?LINE}]),
-	%		   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: ActiveParents : ",ActiveParents,node(),?MODULE,?LINE]]),
 			   _R1=[{net_adm:ping(Pod1),rpc:call(Pod1,net_adm,ping,[Pod2],5000)}||Pod1<-ActiveParents,
 											      Pod2<-ActiveParents,
 											      Pod1/=Pod2],
 			   {ok,ActiveParents};
 		       
 		       Reason->
-			   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,
-							["parent_server:active_nodes  : ",Reason,?MODULE,?LINE]]),
+			    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get active parents, stoppedParents ",[StoppedParents,Reason]]),
 			   {error,Reason}
 		   end;
 	       Reason->
-		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,
-						["parent_server:stopped_nodes  : ",Reason,?MODULE,?LINE]]),
+		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get  stopped Parents ",[Reason]]),
 		   {error,Reason}
 	       end,
-			   
-  %  sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: StoppedParents : ",StoppedParents,node(),?MODULE,?LINE]]),
-  %  sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: ActiveParents : ",ActiveParents,node(),?MODULE,?LINE]]),
-		       
     Result.
 
 %%--------------------------------------------------------------------
@@ -89,18 +69,16 @@ start_parents()->
 %% @end
 %%--------------------------------------------------------------------
 start_pods()->
-  %   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: function start : ",node(),?MODULE,?LINE]]),
     Result=case rpc:call(node(),pod_server,stopped_nodes,[],25*1000) of
 	       {ok,[]}->
-	%	   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: No stopped pods : ",[],node(),?MODULE,?LINE]]),    
 		   ok;
 	       {ok,Stopped}->
 		   CreateResult=[{rpc:call(node(),pod_server,create_node,[Pod],25*1000),Pod}||Pod<-Stopped],
-		   [sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Creating pod node :", CreateRes,Pod,?MODULE,?LINE]])||
+		   [sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to create node for Pod ",[CreateRes,Pod]])||
 		       {CreateRes,Pod}<-CreateResult,
 		       {ok,Pod}/=CreateRes],
-	%	   [sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["OK Creating pod node :",Pod,?MODULE,?LINE]])||
-	%	       {ok,Pod}<-CreateResult],
+		   [sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Succeeded to Creating pod ",[Pod]])||
+		       {ok,Pod}<-CreateResult],
 		   _CommonStart=[{rpc:call(node(),appl_server,create_appl,["common",Pod],25*1000),Pod}||{ok,Pod}<-CreateResult],
 		   _SdStart=[{rpc:call(node(),appl_server,create_appl,["sd",Pod],25*1000),Pod}||{ok,Pod}<-CreateResult],
 		   case rpc:call(node(),pod_server,active_nodes,[],15*1000) of
@@ -110,13 +88,11 @@ start_pods()->
 											      Pod1/=Pod2],
 			   {ok,Active,Stopped};
 		       Reason->
-			   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,
-							["parent_server:active_nodes  : ",Reason,?MODULE,?LINE]]),
+			   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get active parents, stopped ",[Stopped,Reason]]),
 			   {error,Reason}
 		   end;
 	       Reason->
-		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,
-						["parent_server:stopped_nodes  : ",Reason,?MODULE,?LINE]]),
+		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get  stopped pods ",[Reason]]),
 		   {error,Reason}
 	   end,
     Result.
@@ -132,11 +108,11 @@ start_appls()->
 		   ok;
 	       {ok,StoppedApplInfoLists}->			  
 		   ApplCreateResult=create_appl(StoppedApplInfoLists,[]),
-		  % [sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["Create start_user_appls Result :", CreateResult,?MODULE,?LINE]])||
-		  %     CreateResult<-ApplCreateResult];
+		   [ sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"application  start",[CreateResult]])||
+		       CreateResult<-ApplCreateResult],
 		   ApplCreateResult;
 	       Reason->
-		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Create start_appls Result :", Reason,?MODULE,?LINE]]),
+		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get  stopped pods ",[Reason]]),
 		   {error,["appl_server,stopped_appls ",Reason,?MODULE,?LINE]}
 	   end,
     Result.
@@ -147,11 +123,11 @@ start_appls()->
 %% @end
 %%--------------------------------------------------------------------
 start_infra_appls(ClusterSpec)->   
-   Result=case rpc:call(node(),appl_server,stopped_appls,[],30*1000) of
-	      {ok,[]}->
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"Used but candidate to be removed ",[]]),
+    Result=case rpc:call(node(),appl_server,stopped_appls,[],30*1000) of
+	       {ok,[]}->
 		  ok;
 	      {ok,StoppedApplInfoLists}->
-	%	  sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: StoppedApplInfoLists : ",time(),StoppedApplInfoLists,?MODULE,?LINE]]),
 		  R_Nodelog=[{create_infra_appl({PodNode,ApplSpec,App},ClusterSpec),ApplSpec,PodNode}||{PodNode,ApplSpec,App}<-StoppedApplInfoLists,
 												       nodelog==App],
 		  [sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ResultCreate nodelog :",ResultCreate,?MODULE,?LINE]])||
@@ -181,6 +157,7 @@ start_infra_appls(ClusterSpec)->
 %% @end
 %%--------------------------------------------------------------------
 create_pods_based_appl(ApplSpec)->
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"Used but candidate to be removed ",[]]),
     Result=case sd:call(etcd,db_pod_desired_state,get_all_id,[],10*1000) of
 	       {badrpc,Reason}->
 		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["db_pod_desired_state,get_all_id : ",badrpc,Reason]]),
@@ -205,6 +182,7 @@ create_pods_based_appl(ApplSpec)->
 %% @end
 %%--------------------------------------------------------------------
 create_pod(PodNode)->
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"Used but candidate to be removed ",[]]),
     Result=case sd:call(etcd,db_pod_desired_state,read,[parent_node,PodNode],5000) of
 	       {ok,ParentNode}->
 		   case sd:call(etcd,db_pod_desired_state,read,[node_name,PodNode],5000) of
@@ -238,6 +216,8 @@ create_pod(PodNode)->
 %% @end
 %%--------------------------------------------------------------------
 create_infra_appl({PodNode,ApplSpec,nodelog},_ClusterSpec)->
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"Used but candidate to be removed ",[]]),
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"Used but candidate to be removed ",[]]),
     Result= case create_appl([{PodNode,ApplSpec,nodelog}]) of
 		{error,Reason}->
 		    {error,Reason};
@@ -268,6 +248,7 @@ create_infra_appl({PodNode,ApplSpec,nodelog},_ClusterSpec)->
     
  
 create_infra_appl({PodNode,ApplSpec,etcd},_ClusterSpec) ->
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"Used but candidate to be removed ",[]]),
     Result= case create_appl([{PodNode,ApplSpec,etcd}]) of
 		{error,Reason}->
 		    {error,Reason};
@@ -276,6 +257,7 @@ create_infra_appl({PodNode,ApplSpec,etcd},_ClusterSpec) ->
 	    end,
     Result;
 create_infra_appl({PodNode,ApplSpec,control},ClusterSpec) ->
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"Used but candidate to be removed ",[]]),
     rpc:call(PodNode,application,set_env,[[{control,[{cluster_spec,ClusterSpec}]}]],5000),
     Result= case create_appl([{PodNode,ApplSpec,control}]) of
 		{error,Reason}->
@@ -291,6 +273,7 @@ create_infra_appl({PodNode,ApplSpec,control},ClusterSpec) ->
 %% @end
 %%--------------------------------------------------------------------
 start_user_appls()->
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"Used but candidate to be removed ",[]]),
     Result=case rpc:call(node(),appl_server,stopped_appls,[],15*1000) of
 	       {ok,[]}->
 		   ok;
