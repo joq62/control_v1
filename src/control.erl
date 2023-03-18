@@ -18,10 +18,19 @@
 
 	]).
 
+
+%% Leader API
+-export([
+	 start_election/0,declare_victory/1,i_am_alive/1,
+	 who_is_leader/0,am_i_leader/1,
+	 ping_leader/0
+	]).
+
 -export([
 	 start/1,
 	 stop/0
 	]).
+
 
 %%%===================================================================
 %%% API
@@ -52,6 +61,18 @@ orchestrate_result(ResultStartParents,ResultStartPods,ResultStartInfraAppls,Resu
 			     ResultStartPods,
 			     ResultStartInfraAppls,
 			     ResultStartUserAppls}).  
+
+
+%% API for leader 
+who_is_leader()-> gen_server:call(?SERVER,{who_is_leader},infinity).
+am_i_leader(Node)-> gen_server:call(?SERVER,{am_i_leader,Node},infinity).
+ping_leader()-> gen_server:call(?SERVER,{ping_leader},infinity).    
+
+%% election callbacks
+start_election()-> gen_server:cast(?SERVER,{start_election}).
+declare_victory(LeaderNode)-> gen_server:cast(?SERVER,{declare_victory,LeaderNode}).
+i_am_alive(MyNode)-> gen_server:cast(?SERVER,{i_am_alive,MyNode}).
+
 
 %%%===================================================================
 %%% Internal functions
