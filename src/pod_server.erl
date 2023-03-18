@@ -48,11 +48,7 @@
 
 %%-------------------------------------------------------------------
 -record(state,{
-	       cluster_spec,
-	       present_controller_nodes,
-	       missing_controller_nodes,
-	       present_worker_nodes,
-	       missing_worker_nodes
+	       cluster_spec
 	      }).
 
 
@@ -107,12 +103,8 @@ ping() ->
 %% --------------------------------------------------------------------
 init([ClusterSpec]) -> 
     io:format("Started Server ~p~n",[{ClusterSpec,?MODULE,?LINE}]), 
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["Servere started"]]), 
-    {ok, #state{cluster_spec=ClusterSpec,
-		present_controller_nodes=undefined,
-		missing_controller_nodes=undefined,
-		present_worker_nodes=undefined,
-		missing_worker_nodes=undefined}}.   
+   sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"server start",[ClusterSpec]]),
+    {ok, #state{cluster_spec=ClusterSpec}}.   
  
 
 %% --------------------------------------------------------------------
@@ -173,40 +165,13 @@ handle_call({create_pod,ParentNode,NodeName,Dir,PaArgs,EnvArgs},_From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 
-handle_call({get_pod,ApplSpec,HostSpec},_From, State) ->
-    % Candidates
-    Reply=case sd:call(db_etcd,db_host_spec,read,[hostname,HostSpec],5000) of 
-	      {error,Reason}->
-		  {error,Reason};
-	      {ok,HostName}->
-		  case sd:call(db_etcd,db_appl_spec,read,[app,ApplSpec],5000) of
-		      {error,Reason}->
-			  {error,Reason};
-		      {ok,App}->
-			  Candidates=[PodNode||PodNode<-State#state.present_worker_nodes,
-					       {ok,HostName}==rpc:call(PodNode,inet,gethostname,[],5000),
-					       false==lists:keymember(App,1,rpc:call(PodNode,application,which_applications,[],5000))],
-			  % lowest number of applications
-			  NumApplCandidate=[{list_length:start(rpc:call(PodNode,application,which_applications,[],5000)),PodNode}||PodNode<-Candidates],
-			  PrioritizedCandidates=[PodNode||{_,PodNode}<-lists:keysort(1,NumApplCandidate)],
-			  case PrioritizedCandidates of
-			      []->
-				  [];
-			      [Candidate|_] ->
-				  {ok,Candidate}
-			  end
-		  end
-	  end,
-    {reply, Reply, State};
-
-
 
 handle_call({ping},_From, State) ->
     Reply=pong,
     {reply, Reply, State};
 
 handle_call(Request, From, State) ->
-    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Request,?MODULE,?LINE]]),
+    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Request,From]]),
     Reply = {unmatched_signal,?MODULE,Request,From},
     {reply, Reply, State}.
 
@@ -219,7 +184,7 @@ handle_call(Request, From, State) ->
 %% --------------------------------------------------------------------
 
 handle_cast(Msg, State) ->
-    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Msg,?MODULE,?LINE]]),
+    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Msg]]),
     {noreply, State}.
 
 %% --------------------------------------------------------------------
@@ -235,7 +200,7 @@ handle_info({ssh_cm,_,_}, State) ->
     {noreply, State};
 
 handle_info(Info, State) ->
-    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Info,?MODULE,?LINE]]),
+    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Info]]),
     {noreply, State}.
 
 %% --------------------------------------------------------------------

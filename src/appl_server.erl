@@ -139,7 +139,7 @@ initiate(InstanceId)->
 %% --------------------------------------------------------------------
 init([ClusterSpec]) -> 
     io:format(" ~p~n",[{ClusterSpec,?MODULE,?LINE}]),
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["Servere started"]]),
+    sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"server start",[ClusterSpec]]),
     {ok, #state{
 	    cluster_spec=ClusterSpec,
 	    present=undefined,
@@ -168,22 +168,6 @@ init([ClusterSpec]) ->
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
-handle_call({desired_nodes},_From, State) ->
-    Reply=case State#state.cluster_spec of
-	      undefined->
-		  sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["ERROR: Not initiated : ",undefined]]),
-		  {error,["Not initiated : ",undefined]};
-	      _ClusterSpec->
-		  case lib_appl:desired_appls() of
-		      {error,Reason}->
-			  sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["ERROR: desired nodes : ",Reason]]),
-			  {error,Reason};
-		      {ok,Nodes}->
-			  {ok,Nodes}
-		  end
-	  end,
-    {reply, Reply, State};
-
 handle_call({active_appls},_From, State) ->
     Reply=lib_appl:active_appls(State#state.cluster_spec),
     {reply, Reply, State};
@@ -216,7 +200,7 @@ handle_call({ping},_From, State) ->
     {reply, Reply, State};
 
 handle_call(Request, From, State) ->
-    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Request,?MODULE,?LINE]]),
+    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Request,From]]),
     Reply = {unmatched_signal,?MODULE,Request,From},
     {reply, Reply, State}.
 
@@ -228,7 +212,7 @@ handle_call(Request, From, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
 handle_cast(Msg, State) ->
-    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Msg,?MODULE,?LINE]]),
+    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Msg]]),
     io:format("unmatched match cast ~p~n",[{Msg,?MODULE,?LINE}]),
     {noreply, State}.
 
@@ -243,7 +227,7 @@ handle_info({ssh_cm,_,{closed,0}}, State) ->
     {noreply, State};
 
 handle_info(Info, State) ->
-    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Info,?MODULE,?LINE]]),
+    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Info]]),
     {noreply, State}.
 
 %% --------------------------------------------------------------------
@@ -325,7 +309,6 @@ do_new_on_pod(ApplSpec,PodNode,ClusterSpec,TimeOut)->
     _SetEnvResult=[rpc:call(PodNode,application,set_env,[[Config]],5000)||Config<-ApplicationConfig],
     Result=case do_load_start(ApplSpec,PodNode,PodApplGitPath,ApplDir,TimeOut) of
 	       {error,Reason}->
-		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,{error,Reason}]),
 		   {error,Reason};
 	       ok->
 		   ok
@@ -339,6 +322,7 @@ do_new_on_pod(ApplSpec,PodNode,ClusterSpec,TimeOut)->
 appl_new(ApplSpec,HostSpec,ClusterSpec,TimeOut)->
     Result=case pod_server:get_pod(ApplSpec,HostSpec) of
 	       {error,Reason}->
+		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get pod   ",[ApplSpec,HostSpec,Reason]]),
 		   {error,Reason};
 	       []->
 		   {error,[no_pods_available,?MODULE,?LINE]};
@@ -351,7 +335,6 @@ appl_new(ApplSpec,HostSpec,ClusterSpec,TimeOut)->
 		   _SetEnvResult=[rpc:call(PodNode,application,set_env,[[Config]],5000)||Config<-ApplicationConfig],
 		   case do_load_start(ApplSpec,PodNode,PodApplGitPath,ApplDir,TimeOut) of
 		       {error,Reason}->
-			   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,{error,Reason}]),
 			   {error,Reason};
 		       ok->
 			   {atomic,ok}=db_appl_instance:create(ClusterSpec,ApplSpec,PodNode,HostSpec,{date(),time()}),
@@ -367,12 +350,12 @@ appl_new(ApplSpec,HostSpec,ClusterSpec,TimeOut)->
 do_load_start(ApplSpec,PodNode,PodApplGitPath,ApplDir,TimeOut)->
     Result= case rpc:call(PodNode,file,make_dir,[ApplDir],5000) of
 		{error,Reason}->
-		    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,{error,Reason}]),
+		    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to create  ",[ApplSpec,PodNode,ApplDir,Reason]]),
 		    {error,Reason};
 		ok->
 		    case appl:git_clone_to_dir(PodNode,PodApplGitPath,ApplDir) of
 			{error,Reason}->
-			    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,{error,Reason}]),
+			    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to git clone  ",[ApplSpec,PodNode,PodApplGitPath,ApplDir,Reason]]),
 			    {error,Reason};
 			{ok,_}->
 			    {ok,PodApp}=db_appl_spec:read(app,ApplSpec),
@@ -380,12 +363,12 @@ do_load_start(ApplSpec,PodNode,PodApplGitPath,ApplDir,TimeOut)->
 			    Paths=[ApplEbin],
 			    case appl:load(PodNode,PodApp,Paths) of
 				{error,Reason}->
-				    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,{error,Reason}]),
+				    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to load  ",[ApplSpec,PodNode,PodApp,Paths,Reason]]),
 				    {error,Reason}; 
 				ok->
 				    case appl:start(PodNode,PodApp,TimeOut) of
 					{error,Reason}->
-					    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,{error,Reason}]),
+					    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to start  ",[ApplSpec,PodNode,PodApp,Reason]]),
 					    {error,Reason};
 					ok->
 					    ok
@@ -455,24 +438,24 @@ restart_appl(ClusterSpec,{ApplSpec,PodNode})->
     appl:unload(PodNode,PodApp,ApplDir),
     Result=case rpc:call(PodNode,file,make_dir,[ApplDir],5000) of
 	       {error,Reason}->
-		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["couldnt create dir :",ApplDir,Reason]]),
+		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to create pod dir  ",[ApplSpec,PodNode,ApplDir,Reason]]),
 		   {error,Reason};
 	       ok->
 		   case appl:git_clone_to_dir(PodNode,PodApplGitPath,ApplDir) of
 		       {error,Reason}->
-			   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,{error,Reason}]),
+			   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to git clone  ",[ApplSpec,PodNode,PodApplGitPath,ApplDir,Reason]]),
 			   {error,Reason};
 		       {ok,_}->
 			   ApplEbin=filename:join([ApplDir,"ebin"]),
 			   Paths=[ApplEbin],
 			   case appl:load(PodNode,PodApp,Paths) of
 			       {error,Reason}->
-				   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,{error,Reason}]),
+				   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to load appl ",[ApplSpec,PodNode,Reason]]),
 				   {error,Reason};
 			       ok->
 				   case appl:start(PodNode,PodApp,?TimeOut) of
 				       {error,Reason}->
-					   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,{error,Reason}]),
+					   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to start appl ",[ApplSpec,PodNode,Reason]]),
 					   {error,Reason};
 				       ok->
 					   {ok,LocalTypeList}=db_appl_spec:read(local_type,ApplSpec),
@@ -482,7 +465,8 @@ restart_appl(ClusterSpec,{ApplSpec,PodNode})->
 					   [rpc:call(PodNode,rd,add_target_resource_type,[TargetType],5000)||TargetType<-TargetTypeList],
 					   rpc:call(PodNode,rd,trade_resources,[],5000),
 					   timer:sleep(2000),
-					   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["application restarted  ",ApplSpec,PodNode]]),
+					   sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"appl re-started ",[ApplSpec,PodNode]]),
+					   % tabort   sd:cast(log,log,notice,[?MODULE,?LINE,["application restarted  ",ApplSpec,PodNode]]),
 					   {ok,PodNode}
 				   end
 			   end
@@ -524,10 +508,12 @@ start_appl(_ApplSpec,_CurrentClusterSpec,0,_Affinity,_WorkerHostSpecs)->
 start_appl(ApplSpec,CurrentClusterSpec,N,any_host,[HostSpec|T])->
     _Result=case appl_new(ApplSpec,HostSpec,CurrentClusterSpec,60*1000) of
 		{error,Reason}->
-		    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,[error_creating_appl_at_host,ApplSpec,HostSpec,Reason]]),
+		    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Faield creating appl ",[ApplSpec,HostSpec,Reason]]),
+		% tabort    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,[error_creating_appl_at_host,ApplSpec,HostSpec,Reason]]),
 		    {error,[error_creating_appl_at_host,ApplSpec,HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
 		{ok,PodNode}->
-		    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,[appl_created_host,ApplSpec,HostSpec,PodNode]]),
+		    sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"appl started ",[ApplSpec,HostSpec,PodNode]]),
+		% tabort sd:cast(log,log,notice,[?MODULE,?LINE,[appl_created_host,ApplSpec,HostSpec,PodNode]]),
 		    {ok,PodNode}
 	    end,
     RotatedHostSpecList=lists:append(T,[HostSpec]),
@@ -536,10 +522,13 @@ start_appl(ApplSpec,CurrentClusterSpec,N,any_host,[HostSpec|T])->
 start_appl(ApplSpec,CurrentClusterSpec,N,[HostSpec|T],WorkerHostSpecs)->
     _Result=case appl_new(ApplSpec,HostSpec,CurrentClusterSpec,60*1000) of
 		{error,Reason}->
-		    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,[error_creating_appl_at_host,ApplSpec,HostSpec,Reason]]),
+		    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Faield creating appl ",[ApplSpec,HostSpec,Reason]]),
+		% tabort    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,[error_creating_appl_at_host,ApplSpec,HostSpec,Reason]]),
+		    
 		    {error,[error_creating_appl_at_host,ApplSpec,HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
 		{ok,PodNode}->
-		    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,[appl_created_host,ApplSpec,HostSpec,PodNode]]),
+		    sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"appl started ",[ApplSpec,HostSpec,PodNode]]),
+		% tabort    sd:cast(log,log,notice,[?MODULE,?LINE,[appl_created_host,ApplSpec,HostSpec,PodNode]]),
 		    {ok,PodNode}
 	    end,
     RotatedHostSpecList=lists:append(T,[HostSpec]),

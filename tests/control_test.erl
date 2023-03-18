@@ -70,7 +70,7 @@ notice()->
     self()!notice.
 
 loop(ClusterSpec,LogNode,PreviousNotice)->
-    Notice=rpc:call(LogNode,log,all_parsed,[notice],5000),
+    Notice=rpc:call(LogNode,log,all_parsed,[],5000),
     NewPreviousNotice=case Notice==PreviousNotice of
 			  true->
 			      PreviousNotice;
