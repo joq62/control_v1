@@ -101,7 +101,7 @@ ping() ->
 %% --------------------------------------------------------------------
 init([ClusterSpec]) -> 
     io:format(" ~p~n",[{ClusterSpec,?MODULE,?LINE}]),
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["Servere started"]]),
+   sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"server start",[ClusterSpec]]),
     {ok, #state{cluster_spec=ClusterSpec}}.   
  
 
@@ -132,7 +132,7 @@ handle_call({ping},_From, State) ->
     {reply, Reply, State};
 
 handle_call(Request, From, State) ->
-    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Request,?MODULE,?LINE]]),
+   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Request,From]]),
     Reply = {unmatched_signal,?MODULE,Request,From},
     {reply, Reply, State}.
 
@@ -144,7 +144,7 @@ handle_call(Request, From, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
 handle_cast(Msg, State) ->
-    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Msg,?MODULE,?LINE]]),
+    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Msg]]),
     {noreply, State}.
 
 %% --------------------------------------------------------------------
@@ -158,7 +158,7 @@ handle_info({ssh_cm,_,_}, State) ->
     {noreply, State};
 
 handle_info(Info, State) ->
-    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error Unmatched signal  : ",Info,?MODULE,?LINE]]),
+    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Info]]),
     {noreply, State}.
 
 %% --------------------------------------------------------------------

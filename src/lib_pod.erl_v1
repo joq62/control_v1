@@ -53,7 +53,7 @@
 active_nodes(ClusterSpec)->
     Result= case sd:call(etcd,db_pod_desired_state,pods,[ClusterSpec],5000) of
 		{error,Reason}->
-		    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get pods",[ClusterSpec,Reason]]),
+		    sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: db_pod_desired_state,get_all_id: ",Reason,?MODULE,?LINE]]),
 		    {error,Reason};
 		AllNodes->
 		    RunningNodesDir=[{Node,sd:call(etcd,db_pod_desired_state,read,[pod_dir,Node],5000)}||Node<-AllNodes,
@@ -79,7 +79,7 @@ stopped_nodes(ClusterSpec)->
 				       false==lists:member(Node,ActiveNodes)],
 		   {ok,StoppedNodes};
 	       Reason->
-		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get active nodes",[ClusterSpec,Reason]]),
+		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: active_nodes: ",Reason,?MODULE,?LINE]]),
 		   {error,Reason}
 	   end,
     Result.
@@ -103,23 +103,23 @@ create_node(PodNode)->
 					       {ok,EnvArgs}->
 						   create_node(ParentNode,NodeName,PodDir,PaArgsList,EnvArgs);
 					       Reason->
-						   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get env_args ",[PodNode,Reason]]),
+						   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: db_pod_desired_state,read,[env_args,PodNode ",Reason,PodNode,?MODULE,?LINE]]),
 						   {error,Reason}
 					   end;
 				       Reason->
-					   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get pa_args ",[PodNode,Reason]]),
+					   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: db_pod_desired_state,read,[pa_args_list,PodNode ",Reason,PodNode,?MODULE,?LINE]]),
 					   {error,Reason}
 				   end;
 			       Reason->
-				   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get pod dir ",[PodNode,Reason]]),
+				   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: db_pod_desired_state,read,[pod_dir,PodNode ",Reason,PodNode,?MODULE,?LINE]]),
 				   {error,Reason}
 			   end;
 		       Reason->
-			   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get node name ",[PodNode,Reason]]),
+			   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: db_pod_desired_state,read,[node_name,PodNode ",Reason,PodNode,?MODULE,?LINE]]),
 			   {error,Reason}
 		   end;
 	       Reason->
-		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get parent node ",[PodNode,Reason]]),
+		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: db_pod_desired_state,read,[parent_node,PodNode ",Reason,PodNode,?MODULE,?LINE]]),
 		   {error,Reason}
 	   end,
     Result.
@@ -127,27 +127,27 @@ create_node(PodNode)->
 create_node(ParentNode,NodeName,PodDir,PaArgsList,EnvArgs)->
     Result=case rpc:call(ParentNode,net,gethostname,[],5000) of
 	       {badrpc,Reason}->
-		    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get hostname ",[ParentNode,NodeName,PodDir,Reason]]),
+		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error creating PodName on ParentNode",NodeName,ParentNode,Reason]]),
 		   {badrpc,["Error  :",Reason,ParentNode]};
 	       {ok,HostName}->
 		   case rpc:call(ParentNode,erlang,get_cookie,[],5000) of 
 		       {badrpc,Reason}->
-			   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to getcookie ",[ParentNode,NodeName,PodDir,Reason]]),
+			   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error creating PodName on ParentNode",NodeName,ParentNode,Reason]]),
 			   {badrpc,["Error  :",Reason,ParentNode]};	
 		       CookieAtom->
 			   Cookie=atom_to_list(CookieAtom),
 			   Args=" -setcookie "++Cookie++" "++EnvArgs,
 			   case rpc:call(ParentNode,slave,start,[HostName,NodeName,Args],5000) of
 			       {badrpc,Reason}->
-				   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to slave ",[ParentNode,HostName,NodeName,Args,Reason]]),
+				   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error creating PodName on ParentNode",NodeName,ParentNode,Reason]]),
 				   {badrpc,Reason};
 			       {error,Reason}->
-				   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to slave ",[ParentNode,HostName,NodeName,Args,Reason]]),
+				   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error creating PodName on ParentNode",NodeName,ParentNode,Reason]]),
 				   {error,Reason};
 			       {ok,SlaveNode}->
 				   case net_kernel:connect_node(SlaveNode) of
 				       false->
-					   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to connect to node ",[SlaveNode]]),
+					   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error failed_connect ",SlaveNode]]),
 					   {error,[failed_connect,SlaveNode]};
 				       ignored->
 					   {error,[ignored,SlaveNode]};
@@ -155,23 +155,17 @@ create_node(ParentNode,NodeName,PodDir,PaArgsList,EnvArgs)->
 					   rpc:call(SlaveNode,file,del_dir_r,[PodDir],5000),			  			  
 					   case rpc:call(SlaveNode,file,make_dir,[PodDir],5000) of
 					       {badrpc,Reason}->
-						   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to make dir ",[PodDir]]),
 						   rpc:call(SlaveNode,init,stop,[],1000),
+						   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error creating PodName on ParentNode",NodeName,ParentNode,Reason]]),
 						   {badrpc,Reason};
 					       {error,Reason}->
 						   rpc:call(SlaveNode,init,stop,[],1000),
-						   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to make dir ",[PodDir]]),
+						   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error creating PodName on ParentNode",NodeName,ParentNode,Reason]]),
 						   {error,Reason};
 					       ok->  
-						   R=[{error,Path}||Path<-[PodDir|PaArgsList],
+						   []=[{error,Path}||Path<-[PodDir|PaArgsList],
 								     true/=rpc:call(SlaveNode,code,add_patha,[Path],5000)],
-						   case R of
-						       []->
-							   ok;
-						       _ ->
-							   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed add paths ",[R]]),
-							   {error,[R]}
-						   end
+						   ok
 					   end
 				   end
 			   end
@@ -184,3 +178,47 @@ create_node(ParentNode,NodeName,PodDir,PaArgsList,EnvArgs)->
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
+
+load_desired_state(ClusterSpec)->
+  %  sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["DBG  : ",node(),?MODULE,?FUNCTION_NAME,?LINE]]),
+    {ok,Pods}=sd:call(etcd,db_cluster_spec,read,[pods,ClusterSpec],5000),
+    LoadResult=[{error,Reason}|| {error,Reason}<-load_desired_state(Pods,ClusterSpec,[])],
+    case LoadResult of
+	[]->
+	    ok;
+	ErrorList ->
+	    {error,ErrorList}
+    end.
+    
+load_desired_state([],_ClusterSpec,Acc)->
+    Acc;
+load_desired_state([{NumPods,HostSpec}|T],ClusterSpec,Acc) ->
+    false=lists:member({ok,HostSpec},Acc),
+    
+    [ParentNode]=[ParentNode||ParentNode<-sd:call(etcd,db_parent_desired_state,get_all_id,[],5000),
+			      {ok,HostSpec}==sd:call(etcd,db_parent_desired_state,read,[host_spec,ParentNode],5000),
+			      {ok,ClusterSpec}==sd:call(etcd,db_parent_desired_state,read,[cluster_spec,ParentNode],5000)],
+
+    {ok,RootDir}=sd:call(etcd,db_cluster_spec,read,[root_dir,ClusterSpec],5000),
+%    {ok,HostName}=db_host_spec:read,[hostname,HostSpec),
+    BaseNodeName=ClusterSpec++"_pod",
+    Result=load_info(NumPods,RootDir,BaseNodeName,ClusterSpec,HostSpec,ParentNode,[]),
+    load_desired_state(T,ClusterSpec,[Result|Acc]).
+
+load_info(0,_RootDir,_BaseNodeName,_ClusterSpec,_HostSpec,_ParentNode,Acc)->
+    Acc;
+load_info(N,RootDir,BaseNodeName,ClusterSpec,HostSpec,ParentNode,Acc)->
+    NodeName=integer_to_list(N)++"_"++BaseNodeName,
+    {ok,HostName}=sd:call(etcd,db_host_spec,read,[hostname,HostSpec],5000),
+    PodNode=list_to_atom(NodeName++"@"++HostName),
+    PodDir=filename:join(RootDir,NodeName),
+    PaArgsList=[],
+    EnvArgs=" ",             
+    AppSpecList=[],
+    Result=case sd:call(etcd,db_pod_desired_state,create,[PodNode,NodeName,PodDir,ParentNode,AppSpecList,ClusterSpec,HostSpec,PaArgsList,EnvArgs],5000) of
+	       {atomic,ok}->
+		   ok;
+	       Reason->
+		   {error,Reason}
+	   end,
+    load_info(N-1,RootDir,BaseNodeName,ClusterSpec,HostSpec,ParentNode,[Result|Acc]).

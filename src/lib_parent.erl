@@ -19,8 +19,6 @@
 %% External exports
 -export([
 	 create_node/1,
-%	 load_desired_state/1,
-%	 desired_nodes/0,
 	 active_nodes/1,
 	 stopped_nodes/1
 
@@ -30,21 +28,6 @@
 %% ====================================================================
 %% External functions
 %% ====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-desired_nodes()->
-    Result=case sd:call(etcd,db_parent_desired_state,get_all_id,[],5000) of
-	       {error,Reason}->
-		   {error,Reason};
-	       []->
-		   {error,["No desired parent nodes are declared: "]};
-	       Nodes->
-		   {ok,Nodes}
-	   end,
-    Result.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -63,7 +46,7 @@ active_nodes(ClusterSpec)->
 						      false==lists:member(Node,ActiveNodes)],
 		   {ok,ActiveNodes};
 	       Reason->
-		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: db_cluster_spec,read,[root_dir,ClusterSpec: ",Reason,?MODULE,?LINE]]),
+		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get root dir",[ClusterSpec,Reason]]),
 		   {error,Reason}
 	   end,
     Result.
@@ -81,7 +64,7 @@ stopped_nodes(ClusterSpec)->
 				       false==lists:member(Node,ActiveNodes)],
 		   {ok,StoppedNodes};
 	       Reason->
-		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: active_nodes: ",Reason,?MODULE,?LINE]]),
+		    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get active nodes ",[ClusterSpec,Reason]]),
 		   {error,Reason}
 	   end,
     Result.
@@ -116,11 +99,11 @@ create_node(ParentNode)->
 								       ok->
 									   ok;
 								       Reason->
-									   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: make dir : ",Reason,ClusterSpec,ParentNode,?MODULE,?LINE]]),
+									   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to make dir  ",[ClusterSpec,ParentNode,Reason]]),
 									   {error,Reason}
 								   end;
 							       Reason->
-								   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: del dir : ",Reason,ClusterSpec,ParentNode,?MODULE,?LINE]]),
+								   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to delete dir  ",[ClusterSpec,ParentNode,Reason]]),
 								   {error,Reason}
 							   end;  
 						       false->
@@ -128,30 +111,31 @@ create_node(ParentNode)->
 							       ok->
 								   ok;
 							       Reason->
-								   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: make dir : ",Reason,ClusterSpec,ParentNode,?MODULE,?LINE]]),
+								   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to make dir  ",[ClusterSpec,ParentNode,Reason]]),
 								   {error,Reason}
 							   end;
 						       Reason->
-							   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: is_dir : ",Reason,ClusterSpec,ParentNode,?MODULE,?LINE]]),
+							   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed is dir calls ",[ClusterSpec,ParentNode,Reason]]),
 							   {error,Reason}
 						   end;   
 					       Reason->
-						   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: ops_ssh,create : ",Reason,ParentNode,HostSpec,NodeName,Cookie,PaArgs,EnvArgs,TimeOut,?MODULE,?LINE]]),
+						   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to create vm  ",[ParentNode,HostSpec,NodeName,Cookie,PaArgs,EnvArgs,TimeOut,Reason]]),
 						   {error,Reason}
 					   end;   
 				       Reason->
-					   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: db_cluster_spec,read, cookie: ",Reason,ParentNode,?MODULE,?LINE]]),
+					   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get cookie   ",[ParentNode,Reason]]),
 					   {error,Reason}
 				   end;
 			       Reason->
-				   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: ,db_parent_desired_state,read,[cluster_spec,ParentNode: ",Reason,ParentNode,?MODULE,?LINE]]),
+				     sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get cluster spec   ",[ParentNode,Reason]]),
 				   {error,Reason}
 			   end;
 		       Reason->
-			   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: ,db_parent_desired_state,read,[node_name,ParentNode : ",Reason,ParentNode,?MODULE,?LINE]]),
+			    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get node name   ",[ParentNode,Reason]]),
 			   {error,Reason}
 		   end;
 	       Reason->
+		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get host spec   ",[ParentNode,Reason]]),
 		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: ,db_parent_desired_state,read,[host_spec,ParentNode: ",Reason,ParentNode,?MODULE,?LINE]]),
 		   {error,Reason}
 	   end,
@@ -162,49 +146,3 @@ create_node(ParentNode)->
 %% @end
 %%--------------------------------------------------------------------
 
-load_desired_state(ClusterSpec)->
-    Result=case sd:call(etcd,db_cluster_spec,read,[pods,ClusterSpec],5000) of
-	       {ok,Pods}->	  
-		   LoadResult=[{error,Reason}|| {error,Reason}<-load_desired_state(Pods,ClusterSpec,[])],
-		   case LoadResult of
-		       []->
-			   ok;
-		       ErrorList ->
-			   {error,ErrorList}
-		   end;
-	       Reason->
-		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: ,db_cluster_spec,read,[pods,ClusterSpec: ",Reason,?MODULE,?LINE]]),
-		   {error,Reason}
-	   end,
-    Result.
-    
-load_desired_state([],_ClusterSpec,Acc)->
-    Acc;
-load_desired_state([{_NumPods,HostSpec}|T],ClusterSpec,Acc) ->
-    false=lists:member({ok,HostSpec},Acc),
-    Result=case sd:call(etcd,db_cluster_spec,read,[root_dir,ClusterSpec],5000) of
-	       {ok,RootDir}->
-		   case sd:call(etcd,db_host_spec,read,[hostname,HostSpec],5000) of 
-		       {ok,HostName}->
-			   NodeName=ClusterSpec++"_parent",
-			   ParentNode=list_to_atom(NodeName++"@"++HostName),
-			   RootPaArgs=" -pa "++RootDir++" ",
-			   PathCommonFuns=filename:join([RootDir,"*","ebin"]),
-			   CommonFunsPaArgs=" -pa "++PathCommonFuns,
-			   EnvArgs=" ",
-			   case sd:call(etcd,db_parent_desired_state,create,[ParentNode,NodeName,ClusterSpec,HostSpec,
-										RootPaArgs,CommonFunsPaArgs,EnvArgs],5000) of
-			       {atomic,ok}->
-				   ok;
-			       Reason->
-				   {error,Reason}
-			   end;
-		       Reason->
-			   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: ,db_host_spec,read,[hostname,HostSpec: ",Reason,?MODULE,?LINE]]),
-			   {error,Reason}
-		   end;
-	       Reason->
-		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: ,db_cluster_spec,read,[root_dir,ClusterSpec: ",Reason,?MODULE,?LINE]]),
-		   {error,Reason}
-	   end,
-    load_desired_state(T,ClusterSpec,[Result|Acc]).
