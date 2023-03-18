@@ -32,7 +32,7 @@ start(ClusterSpec,LeaderPid,SleepInterval)->
     timer:sleep(SleepInterval),
     Result=case leader:am_i_leader(LeaderPid,node(),5000) of
 	       false->
-		   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["am_i_leader",false,node()]]),
+		%   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["am_i_leader",false,node()]]),
 		   [[],[],[],[],[]];
 	       true->
 	%	   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["am_i_leader",true,node()]]),
