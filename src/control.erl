@@ -27,7 +27,7 @@
 	]).
 
 -export([
-	 start/0,
+	 start/1,
 	 stop/0
 	]).
 
@@ -41,7 +41,7 @@
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
-start()-> gen_server:start_link({local, ?SERVER}, ?SERVER, [], []).
+start(ClusterSpec)-> gen_server:start_link({local, ?SERVER}, ?SERVER, [ClusterSpec], []).
 stop()-> gen_server:call(?SERVER, {stop},infinity).
 
 
