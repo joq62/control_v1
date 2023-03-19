@@ -71,23 +71,19 @@ init(ClusterSpec) ->
 %% --------------------------------------------------------------------
 %% Leader API functions
 handle_call({am_i_leader,Node}, _From, State) ->
- %   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["am_i_leader ",Node," at node ",node()]]),
     Reply = leader:am_i_leader(State#state.leader_pid,Node,5000),
     {reply, Reply, State};
 
 handle_call({who_is_leader}, _From, State) ->
- %   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["who_is_leader "," at node ",node()]]),
     Reply = leader:who_is_leader(State#state.leader_pid,5000),
     {reply, Reply, State};
 
 handle_call({ping_leader}, _From, State) ->
-%    io:format("ping_leader ~p~n",[{?MODULE,?LINE}]),
     Reply = leader:ping(State#state.leader_pid,5000),
     {reply, Reply, State};
 
 %% gen_server API
 handle_call({ping},_From, State) ->
-    sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["ping",node()]]),
     Reply=pong,
     {reply, Reply, State};
 
@@ -105,7 +101,6 @@ handle_call(Request, From, State) ->
 %% --------------------------------------------------------------------
 %% Leader API functions
 handle_cast({i_am_alive,MyNode}, State) ->
- %   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["i_am_alive ", MyNode," at node ",node()]]),
     leader:i_am_alive(State#state.leader_pid,MyNode),
     {noreply, State};
 

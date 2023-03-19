@@ -52,7 +52,8 @@ start([ClusterSpec,_Arg2])->
     io:format("Stop OK !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
     timer:sleep(60*1000),
     io:format("60 sec !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    loop(ClusterSpec,LogNode,[]),
+    AllPods=db_pod_desired_state:pods(ClusterSpec),
+    loop(ClusterSpec,AllPods,[]),
     
     
 
@@ -69,24 +70,37 @@ start([ClusterSpec,_Arg2])->
 notice()->
     self()!notice.
 
-loop(ClusterSpec,LogNode,PreviousNotice)->
-    Notice=rpc:call(LogNode,log,all_parsed,[],5000),
+loop(ClusterSpec,AllNodes,PreviousNotice)->
+    [AvailableNode|_]=[N2||N1<-AllNodes,
+			    N2<-AllNodes,
+			   pong==rpc:call(N1,net_adm,ping,[N2],5000),
+			   pong==rpc:call(N2,sd,ping,[],5000),
+			   N1/=N2],
+    io:format("~p~n ",[AvailableNode]),
+    Notice=rpc:call(AvailableNode,sd,call,[log,log,all_parsed,[],5000],5000),
     NewPreviousNotice=case Notice==PreviousNotice of
 			  true->
 			      PreviousNotice;
 			  false->
-			      io:format(" ****************************************************** ~n"),
-			      io:format("~p~n ",[{date(),time()}]),
-			      NewItems=[Item||Item<-Notice,
-					      false==lists:member(Item,PreviousNotice)],
-			      io:format(" ~p~n",[NewItems]),
-			      io:format("~n "),
+			      print(Notice,PreviousNotice),
 			      Notice
 		      end,
     timer:sleep(60*1000),
-    loop(ClusterSpec,LogNode,NewPreviousNotice).
+    loop(ClusterSpec,AllNodes,NewPreviousNotice).
     
-	
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+print(Notice,PreviousNotice)->
+    io:format(" ****************************************************** ~n"),
+    io:format("~p~n ",[{date(),time()}]),
+    NewItems=[Item||Item<-Notice,
+		    false==lists:member(Item,PreviousNotice)],
+    io:format(" ~p~n",[NewItems]),
+    io:format("~n "),
+    ok.
 
 %%--------------------------------------------------------------------
 %% @doc
