@@ -121,9 +121,9 @@ handle_cast({orchestrate_result,
 
     sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"start orchestrate_result ",[]]),
 
-    StoppedParents=parent_server:stopped_nodes(),
-    StoppedPod=pod_server:stopped_nodes(),
-    StoppedAppl=appl_server:stopped_appls(),
+    StoppedParents=rpc:call(node(),parent_server,stopped_nodes,[],10*1000),
+    StoppedPod=rpc:call(node(),pod_server,stopped_nodes,[],10*1000),
+    StoppedAppl=rpc:call(node(),appl_server,stopped_appls,[],10*1000),
     
     NewWantedState=case {StoppedParents,StoppedPod,StoppedAppl} of
 		       {{ok,[]},{ok,[]},{ok,[]}}->
