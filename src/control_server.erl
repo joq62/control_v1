@@ -144,8 +144,11 @@ handle_cast({orchestrate_result,
 						  ResultStartInfraAppls,
 						  ResultStartUserAppls]])   
     end,
+
+  
     rpc:cast(node(),orchestrate,start,[State#state.cluster_spec,
 				       State#state.leader_pid]),
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"call start orchestrate ",[]]),
     {noreply, State#state{wanted_state=NewWantedState}};
 
 handle_cast(Msg, State) ->

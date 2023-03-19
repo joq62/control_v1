@@ -31,14 +31,17 @@ start(ClusterSpec,LeaderPid,SleepInterval)->
     timer:sleep(SleepInterval),
     Result=case leader:am_i_leader(LeaderPid,node(),5000) of
 	       false->
+		   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"am_i_leader",[false,node()]]),
 		   [[],[],[],[],[]];
 	       true->
+		   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"am_i_leader",[true,node()]]),
 		   orchistrate(ClusterSpec,SleepInterval)
 	   end,
     rpc:cast(node(),control,orchestrate_result,Result).
 
 
 orchistrate(ClusterSpec,SleepInterval)->
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"start orchestrate ",[]]),
     timer:sleep(SleepInterval),
 
     ResultStartParents=rpc:call(node(),lib_control,start_parents,[],15*1000),

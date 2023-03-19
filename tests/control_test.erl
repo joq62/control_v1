@@ -76,7 +76,7 @@ loop(ClusterSpec,AllNodes,PreviousNotice)->
 			   pong==rpc:call(N1,net_adm,ping,[N2],5000),
 			   pong==rpc:call(N2,sd,ping,[],5000),
 			   N1/=N2],
-    io:format("~p~n ",[AvailableNode]),
+    io:format("AvailableNode ~p~n ",[AvailableNode]),
     Notice=rpc:call(AvailableNode,sd,call,[log,log,all_parsed,[],5000],5000),
     NewPreviousNotice=case Notice==PreviousNotice of
 			  true->
@@ -85,6 +85,8 @@ loop(ClusterSpec,AllNodes,PreviousNotice)->
 			      print(Notice,PreviousNotice),
 			      Notice
 		      end,
+    Nodes=[AvailableNode|rpc:call(AvailableNode,erlang,nodes,[],6000)],
+    io:format("Nodes ~p~n ",[Nodes]),
     timer:sleep(60*1000),
     loop(ClusterSpec,AllNodes,NewPreviousNotice).
     
