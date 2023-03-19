@@ -53,9 +53,6 @@ start([ClusterSpec,_Arg2])->
     timer:sleep(60*1000),
     io:format("60 sec !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
     AllPods=db_pod_desired_state:pods(ClusterSpec),
-    application:stop(etcd),
-    [EtcdNode]=sd:get_node(etcd),
-
     loop1(ClusterSpec,AllPods,[]),
     
     
@@ -79,13 +76,13 @@ loop1(ClusterSpec,AllNodes,PreviousNotice)->
 			   pong==rpc:call(N2,sd,ping,[],5000),
 			   N1/=N2],
     io:format("AvailableNode ~p~n ",[AvailableNode]),
-    Notice=sd:call(log,log,all_parsed,[debug],5000),
+    Notice=rpc:call(AvailableNode,sd,call,[log,log,all_parsed,[debug],5000],5000),
     io:format(" ****************************************************** ~n"),
     io:format("~p~n ",[{date(),time()}]),
     io:format("~p~n ",[Notice]),
     NewPreviousNotice=Notice,
- %   Nodes=[AvailableNode|rpc:call(AvailableNode,erlang,nodes,[],6000)],
- %   io:format("Nodes ~p~n ",[Nodes]),
+    Nodes=[AvailableNode|rpc:call(AvailableNode,erlang,nodes,[],6000)],
+    io:format("Nodes ~p~n ",[Nodes]),
     timer:sleep(60*1000),
     loop1(ClusterSpec,AllNodes,NewPreviousNotice).
     %%--------------------------------------------------------------------
