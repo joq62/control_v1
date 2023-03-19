@@ -121,9 +121,28 @@ handle_cast({orchestrate_result,
 
     sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"start orchestrate_result ",[]]),
 
-    StoppedParents=rpc:call(node(),parent_server,stopped_nodes,[],10*1000),
-    StoppedPod=rpc:call(node(),pod_server,stopped_nodes,[],10*1000),
-    StoppedAppl=rpc:call(node(),appl_server,stopped_appls,[],10*1000),
+    StoppedParents=rpc:call(node(),parent_server,stopped_nodes,[],5*1000),
+    case StoppedParents of
+	{ok,_}->
+	    ok;
+	Reason1->
+	    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"Error calling for StoppedParents ",[StoppedParents,Reason1]])
+    end,
+	
+    StoppedPod=rpc:call(node(),pod_server,stopped_nodes,[],5*1000),
+    case StoppedPod of
+	{ok,_}->
+	    ok;
+	Reason2->
+	    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"Error calling for StoppedPod ",[StoppedPod,Reason2]])
+    end,
+    StoppedAppl=rpc:call(node(),appl_server,stopped_appls,[],5*1000),
+    case StoppedAppl of
+	{ok,_}->
+	    ok;
+	Reason3->
+	    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Error calling for StoppedAppl ",[StoppedAppl,Reason3]])
+    end,
     
     NewWantedState=case {StoppedParents,StoppedPod,StoppedAppl} of
 		       {{ok,[]},{ok,[]},{ok,[]}}->
