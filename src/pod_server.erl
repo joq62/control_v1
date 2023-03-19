@@ -146,7 +146,15 @@ handle_call({stopped_nodes},_From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call({create_node,PodNode},_From, State) ->
-    Reply=lib_pod:create_node(PodNode),
+    Reply=case lib_pod:create_node(PodNode) of
+	      {error,Reason}->
+		  sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to create pod node ",[PodNode]]),
+		  {error,Reason};
+	      ok->
+		  sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"Succeeded to Create pod node ",[PodNode]]),
+		  sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"Succeeded to Create  pod node ",[PodNode]]),
+		  ok
+	  end,
     {reply, Reply, State};
 
 %%--------------------------------------------------------------------

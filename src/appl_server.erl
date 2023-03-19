@@ -186,7 +186,17 @@ handle_call({stopped_appls},_From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call({create_appl,ApplSpec,PodNode},_From, State) ->
-    Reply=lib_appl:create_appl(ApplSpec,PodNode),
+    Reply=case lib_appl:create_appl(ApplSpec,PodNode) of
+{error,Reason}->
+		  sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to create Application on pod node ",[ApplSpec,PodNode]]),
+		  {error,Reason};
+	      ok->
+		  sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"Succeeded to Create Application on pod node ",[ApplSpec,PodNode]]),
+		  sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"Succeeded to Create Application on pod node ",[ApplSpec,PodNode]]),
+		  ok
+
+	  end,
+	      
     {reply, Reply, State};
     
 
