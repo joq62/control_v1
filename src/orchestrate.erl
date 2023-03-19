@@ -28,6 +28,7 @@ start(ClusterSpec,LeaderPid)->
     start(ClusterSpec,LeaderPid,?SleepInterval).
 
 start(ClusterSpec,LeaderPid,SleepInterval)->
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"start  ",[ClusterSpec,LeaderPid]]),
     timer:sleep(SleepInterval),
     Result=case leader:am_i_leader(LeaderPid,node(),5000) of
 	       false->

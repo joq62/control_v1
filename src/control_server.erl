@@ -119,12 +119,7 @@ handle_cast({orchestrate_result,
 	     ResultStartInfraAppls,
 	     ResultStartUserAppls}, State) ->
 
-    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,
-			   "start orchestrate_result ",
-			   [ ResultStartParents,
-			     ResultStartPods,
-			     ResultStartInfraAppls,
-			     ResultStartUserAppls]]),
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"start orchestrate_result ",[]]),
 
     {ok,StoppedParents}=parent_server:stopped_nodes(),
     {ok,StoppedPod}=pod_server:stopped_nodes(),
@@ -151,7 +146,7 @@ handle_cast({orchestrate_result,
   
     rpc:cast(node(),orchestrate,start,[State#state.cluster_spec,
 				       State#state.leader_pid]),
-    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"call start orchestrate ",[]]),
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"End - calling  start orchestrate ",[]]),
     {noreply, State#state{wanted_state=NewWantedState}};
 
 handle_cast(Msg, State) ->
