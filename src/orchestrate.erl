@@ -53,7 +53,7 @@ orchistrate(ClusterSpec,SleepInterval)->
     ResultStartUserAppls=rpc:call(node(),lib_control,start_appls,[],60*1000), 
     sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"ResultStartUserAppls ",[ResultStartUserAppls]]),
 
-    ResultStartInfraAppls=[], %% Shall be removed
+    ResultStartInfraAppls=ok, %% Shall be removed
 
     [ResultStartParents,ResultStartPods,ResultStartInfraAppls,ResultStartUserAppls].
     

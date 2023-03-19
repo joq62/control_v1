@@ -43,7 +43,7 @@
 start_parents()->
     Result=case rpc:call(node(),parent_server,stopped_nodes,[],10*1000) of
 	       {ok,[]}->
-		   {ok,[]};
+		   ok;
 	       {ok,StoppedParents}->
 		   CreateResult=[{rpc:call(node(),parent_server,create_node,[Parent],25*1000),Parent}||Parent<-StoppedParents],
 		   [sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to create node for Pod ",[Reason,Pod]])||

@@ -122,7 +122,13 @@ handle_cast({orchestrate_result,
 	     ResultStartInfraAppls,
 	     ResultStartUserAppls}, State) ->
 
- 
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,
+			   "start orchestrate_result ",
+			   [ ResultStartParents,
+			     ResultStartPods,
+			     ResultStartInfraAppls,
+			     ResultStartUserAppls]]),
+
     {ok,StoppedParents}=parent_server:stopped_nodes(),
     {ok,StoppedPod}=pod_server:stopped_nodes(),
     {ok,StoppedAppl}=appl_server:stopped_appls(),
