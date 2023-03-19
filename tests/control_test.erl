@@ -50,13 +50,13 @@ start([ClusterSpec,_Arg2])->
     io:format("WhichApplications ~p~n",[{lists:sort(WhichApplications),?MODULE,?LINE,?FUNCTION_NAME}]),
     
     io:format("Stop OK !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    timer:sleep(60*1000),
-    io:format("60 sec !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
     AllPods=db_pod_desired_state:pods(ClusterSpec),
     application:stop(etcd),
     [EtcdNode]=sd:get_node(etcd),
 
-    loop1(ClusterSpec,AllPods,[]),
+    io:format(" ****************************************************** ~n"),
+    io:format("~p~n ",[{date(),time()}]),
+    loop(ClusterSpec,AllPods,[]),
     
     
 
@@ -86,24 +86,21 @@ loop1(ClusterSpec,AllNodes,PreviousNotice)->
     NewPreviousNotice=Notice,
  %   Nodes=[AvailableNode|rpc:call(AvailableNode,erlang,nodes,[],6000)],
  %   io:format("Nodes ~p~n ",[Nodes]),
-    timer:sleep(60*1000),
+    timer:sleep(5*1000),
     loop1(ClusterSpec,AllNodes,NewPreviousNotice).
     %%--------------------------------------------------------------------
 %% @doc
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
-notice()->
-    self()!notice.
-
 loop(ClusterSpec,AllNodes,PreviousNotice)->
     [AvailableNode|_]=[N2||N1<-AllNodes,
 			    N2<-AllNodes,
 			   pong==rpc:call(N1,net_adm,ping,[N2],5000),
 			   pong==rpc:call(N2,sd,ping,[],5000),
 			   N1/=N2],
-    io:format("AvailableNode ~p~n ",[AvailableNode]),
-    Notice=rpc:call(AvailableNode,sd,call,[log,log,all_parsed,[],5000],5000),
+ %   io:format("AvailableNode ~p~n ",[AvailableNode]),
+    Notice=sd:call(log,log,all_parsed,[debug],5000),
     NewPreviousNotice=case Notice==PreviousNotice of
 			  true->
 			      PreviousNotice;
@@ -111,9 +108,9 @@ loop(ClusterSpec,AllNodes,PreviousNotice)->
 			      print(Notice,PreviousNotice),
 			      Notice
 		      end,
-    Nodes=[AvailableNode|rpc:call(AvailableNode,erlang,nodes,[],6000)],
-    io:format("Nodes ~p~n ",[Nodes]),
-    timer:sleep(60*1000),
+  %  Nodes=[AvailableNode|rpc:call(AvailableNode,erlang,nodes,[],6000)],
+  %  io:format("Nodes ~p~n ",[Nodes]),
+    timer:sleep(5*1000),
     loop(ClusterSpec,AllNodes,NewPreviousNotice).
     
 %%--------------------------------------------------------------------
@@ -122,12 +119,12 @@ loop(ClusterSpec,AllNodes,PreviousNotice)->
 %% @end
 %%--------------------------------------------------------------------
 print(Notice,PreviousNotice)->
-    io:format(" ****************************************************** ~n"),
-    io:format("~p~n ",[{date(),time()}]),
+%    io:format(" ****************************************************** ~n"),
+ %   io:format("~p~n ",[{date(),time()}]),
     NewItems=[Item||Item<-Notice,
 		    false==lists:member(Item,PreviousNotice)],
     io:format(" ~p~n",[NewItems]),
-    io:format("~n "),
+  %  io:format("~n "),
     ok.
 
 %%--------------------------------------------------------------------
