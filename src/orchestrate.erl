@@ -28,7 +28,7 @@ start(ClusterSpec,LeaderPid)->
     start(ClusterSpec,LeaderPid,?SleepInterval).
 
 start(ClusterSpec,LeaderPid,SleepInterval)->
-    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"start  ",[ClusterSpec,LeaderPid]]),
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"start orchestrate  ",[ClusterSpec,LeaderPid]]),
     timer:sleep(SleepInterval),
     Result=case leader:am_i_leader(LeaderPid,node(),5000) of
 	       false->
@@ -38,6 +38,7 @@ start(ClusterSpec,LeaderPid,SleepInterval)->
 		   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"am_i_leader",[true,node()]]),
 		   orchistrate(ClusterSpec,SleepInterval)
 	   end,
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"end orchestrate  ",[ClusterSpec,LeaderPid]]),
     rpc:cast(node(),control,orchestrate_result,Result).
 
 
@@ -46,13 +47,13 @@ orchistrate(ClusterSpec,SleepInterval)->
     timer:sleep(SleepInterval),
 
     ResultStartParents=rpc:call(node(),lib_control,start_parents,[],15*1000),
-    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"ResultStartParents ",[ResultStartParents]]),
+ %   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"ResultStartParents ",[ResultStartParents]]),
 
     ResultStartPods=rpc:call(node(),lib_control,start_pods,[],60*1000),
-    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"ResultStartPods ",[ResultStartPods]]),
+ %   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"ResultStartPods ",[ResultStartPods]]),
 
     ResultStartUserAppls=rpc:call(node(),lib_control,start_appls,[],60*1000), 
-    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"ResultStartUserAppls ",[ResultStartUserAppls]]),
+ %   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"ResultStartUserAppls ",[ResultStartUserAppls]]),
 
     ResultStartInfraAppls=ok, %% Shall be removed
 
