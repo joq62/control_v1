@@ -116,7 +116,15 @@ init([ClusterSpec]) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
 handle_call({create_node,ParentNode},_From, State) ->
-    Reply=lib_parent:create_node(ParentNode),
+    Reply=case lib_parent:create_node(ParentNode) of
+	      {error,Reason}->
+		  sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to create parent node ",[ParentNode]]),
+		  {error,Reason};
+	      ok->
+		  sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"Succeeded to Create parent node ",[ParentNode]]),
+		  sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"Succeeded to Create parent node ",[ParentNode]]),
+		  ok
+	  end,
     {reply, Reply, State};
 
 handle_call({active_nodes},_From, State) ->

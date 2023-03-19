@@ -28,22 +28,22 @@ start(ClusterSpec,LeaderPid)->
     start(ClusterSpec,LeaderPid,?SleepInterval).
 
 start(ClusterSpec,LeaderPid,SleepInterval)->
-    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"start orchestrate  ",[ClusterSpec,LeaderPid]]),
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"start orchestrate  ",[node()]]),
     timer:sleep(SleepInterval),
     Result=case leader:am_i_leader(LeaderPid,node(),5000) of
 	       false->
 		   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"am_i_leader",[false,node()]]),
-		   [[],[],[],[],[]];
+		   [ok,ok,ok,ok];
 	       true->
 		   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"am_i_leader",[true,node()]]),
 		   orchistrate(ClusterSpec,SleepInterval)
 	   end,
-    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"end orchestrate  ",[ClusterSpec,LeaderPid]]),
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"end orchestrate  ",[node()]]),
     rpc:cast(node(),control,orchestrate_result,Result).
 
 
 orchistrate(ClusterSpec,SleepInterval)->
-    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"start orchestrate ",[]]),
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"start orchestrate ",[node()]]),
     timer:sleep(SleepInterval),
 
     ResultStartParents=rpc:call(node(),lib_control,start_parents,[],15*1000),
