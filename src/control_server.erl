@@ -50,9 +50,10 @@
 %init(ClusterSpec) -> 
 init(ClusterSpec) -> 
     io:format(" ~p~n",[{ClusterSpec,?MODULE,?LINE}]),
-   
+    {ok,LeaderPid}=leader:start(?App),
     sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,node(),"server start",[]]),
     {ok, #state{cluster_spec=ClusterSpec,
+		leader_pid=LeaderPid,
 		wanted_state=undefined},0}.   
  
 
@@ -181,11 +182,10 @@ handle_cast(Msg, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
 handle_info(timeout, State) ->
-    {ok,LeaderPid}=leader:start(?App),
     rpc:cast(node(),orchestrate,start,[State#state.cluster_spec,
-				       LeaderPid]),
-    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Server start timeout",[LeaderPid]]),
-    {noreply, State#state{leader_pid=LeaderPid}};
+				       State#state.leader_pid]),
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Server start timeout",[State#state.leader_pid]]),
+    {noreply, State};
 
 handle_info(Info, State) ->
     sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Unmatched signal",[Info]]),
