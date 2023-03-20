@@ -46,7 +46,7 @@ active_nodes(ClusterSpec)->
 						      false==lists:member(Node,ActiveNodes)],
 		   {ok,ActiveNodes};
 	       Reason->
-		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get root dir",[ClusterSpec,Reason]]),
+		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get root dir",[ClusterSpec,Reason]]),
 		   {error,Reason}
 	   end,
     Result.
@@ -64,7 +64,7 @@ stopped_nodes(ClusterSpec)->
 				       false==lists:member(Node,ActiveNodes)],
 		   {ok,StoppedNodes};
 	       Reason->
-		    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get active nodes ",[ClusterSpec,Reason]]),
+		    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get active nodes ",[ClusterSpec,Reason]]),
 		   {error,Reason}
 	   end,
     Result.
@@ -99,11 +99,11 @@ create_node(ParentNode)->
 								       ok->
 									   ok;
 								       Reason->
-									   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to make dir  ",[ClusterSpec,ParentNode,Reason]]),
+									   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to make dir  ",[ClusterSpec,ParentNode,Reason]]),
 									   {error,Reason}
 								   end;
 							       Reason->
-								   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to delete dir  ",[ClusterSpec,ParentNode,Reason]]),
+								   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to delete dir  ",[ClusterSpec,ParentNode,Reason]]),
 								   {error,Reason}
 							   end;  
 						       false->
@@ -111,31 +111,31 @@ create_node(ParentNode)->
 							       ok->
 								   ok;
 							       Reason->
-								   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to make dir  ",[ClusterSpec,ParentNode,Reason]]),
+								   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to make dir  ",[ClusterSpec,ParentNode,Reason]]),
 								   {error,Reason}
 							   end;
 						       Reason->
-							   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed is dir calls ",[ClusterSpec,ParentNode,Reason]]),
+							   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed is dir calls ",[ClusterSpec,ParentNode,Reason]]),
 							   {error,Reason}
 						   end;   
 					       Reason->
-						   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to create vm  ",[ParentNode,HostSpec,NodeName,Cookie,PaArgs,EnvArgs,TimeOut,Reason]]),
+						   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to create vm  ",[ParentNode,HostSpec,NodeName,Cookie,PaArgs,EnvArgs,TimeOut,Reason]]),
 						   {error,Reason}
 					   end;   
 				       Reason->
-					   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get cookie   ",[ParentNode,Reason]]),
+					   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get cookie   ",[ParentNode,Reason]]),
 					   {error,Reason}
 				   end;
 			       Reason->
-				     sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get cluster spec   ",[ParentNode,Reason]]),
+				     sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get cluster spec   ",[ParentNode,Reason]]),
 				   {error,Reason}
 			   end;
 		       Reason->
-			    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get node name   ",[ParentNode,Reason]]),
+			    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get node name   ",[ParentNode,Reason]]),
 			   {error,Reason}
 		   end;
 	       Reason->
-		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to get host spec   ",[ParentNode,Reason]]),
+		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get host spec   ",[ParentNode,Reason]]),
 		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: ,db_parent_desired_state,read,[host_spec,ParentNode: ",Reason,ParentNode,?MODULE,?LINE]]),
 		   {error,Reason}
 	   end,

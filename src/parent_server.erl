@@ -101,7 +101,7 @@ ping() ->
 %% --------------------------------------------------------------------
 init([ClusterSpec]) -> 
     io:format(" ~p~n",[{ClusterSpec,?MODULE,?LINE}]),
-   sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"server start",[ClusterSpec]]),
+   sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,node(),"server start",[ClusterSpec]]),
     {ok, #state{cluster_spec=ClusterSpec}}.   
  
 
@@ -118,11 +118,11 @@ init([ClusterSpec]) ->
 handle_call({create_node,ParentNode},_From, State) ->
     Reply=case lib_parent:create_node(ParentNode) of
 	      {error,Reason}->
-		  sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Failed to create parent node ",[ParentNode]]),
+		  sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to create parent node ",[ParentNode]]),
 		  {error,Reason};
 	      ok->
-		  sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"Succeeded to Create parent node ",[ParentNode]]),
-		  sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"Succeeded to Create parent node ",[ParentNode]]),
+		  sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Succeeded to Create parent node ",[ParentNode]]),
+		  sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Succeeded to Create parent node ",[ParentNode]]),
 		  ok
 	  end,
     {reply, Reply, State};
@@ -140,7 +140,7 @@ handle_call({ping},_From, State) ->
     {reply, Reply, State};
 
 handle_call(Request, From, State) ->
-   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Request,From]]),
+   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Unmatched signal",[Request,From]]),
     Reply = {unmatched_signal,?MODULE,Request,From},
     {reply, Reply, State}.
 
@@ -152,7 +152,7 @@ handle_call(Request, From, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
 handle_cast(Msg, State) ->
-    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Msg]]),
+    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Unmatched signal",[Msg]]),
     {noreply, State}.
 
 %% --------------------------------------------------------------------
@@ -166,7 +166,7 @@ handle_info({ssh_cm,_,_}, State) ->
     {noreply, State};
 
 handle_info(Info, State) ->
-    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Info]]),
+    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Unmatched signal",[Info]]),
     {noreply, State}.
 
 %% --------------------------------------------------------------------

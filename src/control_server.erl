@@ -51,7 +51,7 @@
 init(ClusterSpec) -> 
     io:format(" ~p~n",[{ClusterSpec,?MODULE,?LINE}]),
    
-    sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"server start",[]]),
+    sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,node(),"server start",[]]),
     {ok, #state{cluster_spec=ClusterSpec,
 		wanted_state=undefined},0}.   
  
@@ -85,7 +85,7 @@ handle_call({ping},_From, State) ->
     {reply, Reply, State};
 
 handle_call(Request, From, State) ->
-    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Request,From]]),
+    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Unmatched signal",[Request,From]]),
     Reply = {unmatched_signal,?MODULE,Request,From},
     {reply, Reply, State}.
 
@@ -102,12 +102,12 @@ handle_cast({i_am_alive,MyNode}, State) ->
     {noreply, State};
 
 handle_cast({declare_victory,LeaderNode}, State) ->
-    sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"declare_victory from ",[LeaderNode]]),
+    sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,node(),"declare_victory from ",[LeaderNode]]),
     leader:declare_victory(State#state.leader_pid,LeaderNode),
     {noreply, State};
 
 handle_cast({start_election}, State) ->
-    sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,"start_election ",[]]),
+    sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,node(),"start_election ",[]]),
     leader:start_election(State#state.leader_pid),
     {noreply, State};
 
@@ -119,14 +119,14 @@ handle_cast({orchestrate_result,
 	     ResultStartInfraAppls,
 	     ResultStartUserAppls}, State) ->
 
-    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"start orchestrate_result ",[]]),
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"start orchestrate_result ",[]]),
 
     StoppedParents=rpc:call(node(),parent_server,stopped_nodes,[],5*1000),
     case StoppedParents of
 	{ok,_}->
 	    ok;
 	Reason1->
-	    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"Error calling for StoppedParents ",[StoppedParents,Reason1]])
+	    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Error calling for StoppedParents ",[StoppedParents,Reason1]])
     end,
 	
     StoppedPod=rpc:call(node(),pod_server,stopped_nodes,[],5*1000),
@@ -134,14 +134,14 @@ handle_cast({orchestrate_result,
 	{ok,_}->
 	    ok;
 	Reason2->
-	    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"Error calling for StoppedPod ",[StoppedPod,Reason2]])
+	    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Error calling for StoppedPod ",[StoppedPod,Reason2]])
     end,
     StoppedAppl=rpc:call(node(),appl_server,stopped_appls,[],5*1000),
     case StoppedAppl of
 	{ok,_}->
 	    ok;
 	Reason3->
-	    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Error calling for StoppedAppl ",[StoppedAppl,Reason3]])
+	    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Error calling for StoppedAppl ",[StoppedAppl,Reason3]])
     end,
     
     NewWantedState=case {StoppedParents,StoppedPod,StoppedAppl} of
@@ -154,7 +154,7 @@ handle_cast({orchestrate_result,
 	NewWantedState->
 	    ok;
 	_->	 
-	    sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,
+	    sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,node(),
 				    "New State ",[NewWantedState,
 						  ResultStartParents,
 						  ResultStartPods,
@@ -165,11 +165,11 @@ handle_cast({orchestrate_result,
   
     rpc:cast(node(),orchestrate,start,[State#state.cluster_spec,
 				       State#state.leader_pid]),
-    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"End - calling  start orchestrate ",[]]),
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"End - calling  start orchestrate ",[]]),
     {noreply, State#state{wanted_state=NewWantedState}};
 
 handle_cast(Msg, State) ->
-    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Msg]]),
+    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Unmatched signal",[Msg]]),
     {noreply, State}.
 
 %% --------------------------------------------------------------------
@@ -184,11 +184,11 @@ handle_info(timeout, State) ->
     {ok,LeaderPid}=leader:start(?App),
     rpc:cast(node(),orchestrate,start,[State#state.cluster_spec,
 				       LeaderPid]),
-    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,"Server start timeout",[LeaderPid]]),
+    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Server start timeout",[LeaderPid]]),
     {noreply, State#state{leader_pid=LeaderPid}};
 
 handle_info(Info, State) ->
-    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,"Unmatched signal",[Info]]),
+    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Unmatched signal",[Info]]),
     {noreply, State}.
 
 %% --------------------------------------------------------------------
