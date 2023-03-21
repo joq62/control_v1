@@ -113,6 +113,7 @@ handle_call({connect,_Tabort},_From, State) ->
 	   {log,LogPing},
 	   {control,ControlPing}],
     ok=rpc:call(State#state.terminal_node,terminal_server,print,["~p~n",[{Reply}]],5000),
+    spawn(fun()->loop(State,Pods,[]) end),
     {reply, Reply, State};
  
   
@@ -286,6 +287,32 @@ code_change(_OldVsn, State, _Extra) ->
 %% Returns: any (ignored by gen_server)
 %% --------------------------------------------------------------------
 
+loop(State,AllNodes,PreviousNotice)->
+    [AvailableNode|_]=[N2||N1<-AllNodes,
+			    N2<-AllNodes,
+			   pong==rpc:call(N1,net_adm,ping,[N2],5000),
+			   pong==rpc:call(N2,sd,ping,[],5000),
+			   N1/=N2],
+ %   io:format("AvailableNode ~p~n ",[AvailableNode]),
+    Notice=sd:call(log,log,all_parsed,[debug],5000),
+    NewPreviousNotice=case Notice==PreviousNotice of
+			  true->
+			      PreviousNotice;
+			  false->
+			      print(State,Notice,PreviousNotice),
+			      Notice
+		      end,
+  %  Nodes=[AvailableNode|rpc:call(AvailableNode,erlang,nodes,[],6000)],
+  %  io:format("Nodes ~p~n ",[Nodes]),
+    timer:sleep(1*1000),
+    loop(State,AllNodes,NewPreviousNotice).
+
+print(State,Notice,PreviousNotice)->
+    NewItems=[Item||Item<-Notice,
+		    false==lists:member(Item,PreviousNotice)],
+    rpc:call(State#state.terminal_node,terminal_server,print,["~p~n",[{NewItems}]],5000),
+  
+    ok.
 %% --------------------------------------------------------------------
 %% Function: terminate/2
 %% Description: Shutdown the server

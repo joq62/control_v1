@@ -110,7 +110,7 @@ loop(ClusterSpec,AllNodes,PreviousNotice)->
 		      end,
   %  Nodes=[AvailableNode|rpc:call(AvailableNode,erlang,nodes,[],6000)],
   %  io:format("Nodes ~p~n ",[Nodes]),
-    timer:sleep(5*1000),
+    timer:sleep(1*1000),
     loop(ClusterSpec,AllNodes,NewPreviousNotice).
     
 %%--------------------------------------------------------------------
