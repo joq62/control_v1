@@ -33,7 +33,6 @@ build:
 	cp _build/default/lib/*/ebin/* ebin;
 	rm -rf _build test_ebin logs log;
 
-
 clean:
 	rm -rf  *~ */*~ src/*.beam tests/*.beam
 	rm -rf erl_cra*;
@@ -46,6 +45,25 @@ clean:
 	rm -rf sd;
 	rm -rf nodelog;
 	rm -rf etcd;
+
+
+console:
+	rm -rf  *~ */*~ src/*.beam tests/*.beam;
+	rm -rf console_ebin;
+#  	dependencies
+	rm -rf common;
+	git clone https://github.com/joq62/common.git;
+	rm -rf sd;
+	git clone https://github.com/joq62/sd.git;
+	rm -rf etcd;
+	git clone https://github.com/joq62/etcd.git;
+	mkdir console_ebin;
+	erlc -o console_ebin src/*.erl;
+	erlc -o console_ebin tests/lib_install.erl;
+	erl -pa */ebin -pa console_ebin -sname console -run console start $(a) -setcookie test_cookie
+terminal:
+	erl -pa */ebin -pa console_ebin -sname terminal -run terminal_server start $(a) -setcookie test_cookie 
+
 
 eunit:
 	rm -rf  *~ */*~ src/*.beam tests/*.beam
@@ -63,8 +81,6 @@ eunit:
 	git clone https://github.com/joq62/common.git;
 	rm -rf sd;
 	git clone https://github.com/joq62/sd.git;
-	rm -rf nodelog;
-	git clone https://github.com/joq62/nodelog.git;
 	rm -rf etcd;
 	git clone https://github.com/joq62/etcd.git;
 #	Applications

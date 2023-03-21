@@ -5,9 +5,9 @@
               {mod,{control_app,[]}},
               {applications,[kernel,stdlib]},
               {env,[]},
-              {modules,[appl,appl_server,control,control_app,control_server,
-                        control_sup,install_server,lib_appl,lib_control,
-                        lib_parent,lib_pod,local,ops_ssh,orchestrate,
-                        parent_server,pod_server]},
+              {modules,[appl,appl_server,console,console_server,control,
+                        control_app,control_server,control_sup,install_server,
+                        lib_appl,lib_control,lib_parent,lib_pod,local,ops_ssh,
+                        orchestrate,parent_server,pod_server,terminal_server]},
               {licenses,["Apache-2.0"]},
               {links,[]}]}.
