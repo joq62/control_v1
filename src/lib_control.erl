@@ -45,6 +45,7 @@ start_parents()->
 	       {ok,[]}->
 		   ok;
 	       {ok,StoppedParents}->
+		   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"StoppedParents ",[StoppedParents]]),
 		   CreateResult=[{rpc:call(node(),parent_server,create_node,[Parent],25*1000),Parent}||Parent<-StoppedParents],
 		   [sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to create node for Pod ",[Reason,Pod]])||
 		       {{error,Reason},Pod}<-CreateResult],
@@ -77,6 +78,7 @@ start_pods()->
 	       {ok,[]}->
 		   ok;
 	       {ok,Stopped}->
+		   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Stopped Pods ",[Stopped]]),
 		   CreateResult=[{rpc:call(node(),pod_server,create_node,[Pod],25*1000),Pod}||Pod<-Stopped],
 		   [sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to create node for Pod ",[Reason,Pod]])||
 		       {{error,Reason},Pod}<-CreateResult],
@@ -110,7 +112,8 @@ start_appls()->
     Result=case rpc:call(node(),appl_server,stopped_appls,[],15*1000) of
 	       {ok,[]}->
 		   ok;
-	       {ok,StoppedApplInfoLists}->			  
+	       {ok,StoppedApplInfoLists}->	
+		   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"StoppedApplInfoLists ",[StoppedApplInfoLists]]),		  
 		   ApplCreateResult=create_appl(StoppedApplInfoLists,[]),
 		   [ sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,node(),"application  start",[CreateResult]])||
 		       CreateResult<-ApplCreateResult],
