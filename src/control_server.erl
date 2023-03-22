@@ -81,6 +81,11 @@ handle_call({ping_leader}, _From, State) ->
     {reply, Reply, State};
 
 %% gen_server API
+
+handle_call({is_wanted_state},_From, State) ->
+    Reply=pong,
+    {reply, Reply, State};
+
 handle_call({ping},_From, State) ->
     Reply=pong,
     {reply, Reply, State};
@@ -127,7 +132,7 @@ handle_cast({orchestrate_result,
 	{ok,_}->
 	    ok;
 	Reason1->
-	    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Error calling for StoppedParents ",[StoppedParents,Reason1]])
+	    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Error calling for StoppedParents ",[StoppedParents,Reason1]])
     end,
 	
     StoppedPod=rpc:call(node(),pod_server,stopped_nodes,[],5*1000),
@@ -135,7 +140,7 @@ handle_cast({orchestrate_result,
 	{ok,_}->
 	    ok;
 	Reason2->
-	    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Error calling for StoppedPod ",[StoppedPod,Reason2]])
+	    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Error calling for StoppedPod ",[StoppedPod,Reason2]])
     end,
     StoppedAppl=rpc:call(node(),appl_server,stopped_appls,[],5*1000),
     case StoppedAppl of
@@ -144,7 +149,6 @@ handle_cast({orchestrate_result,
 	Reason3->
 	    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Error calling for StoppedAppl ",[StoppedAppl,Reason3]])
     end,
-    
     NewWantedState=case {StoppedParents,StoppedPod,StoppedAppl} of
 		       {{ok,[]},{ok,[]},{ok,[]}}->
 			   desired_state;
@@ -166,7 +170,7 @@ handle_cast({orchestrate_result,
   
     rpc:cast(node(),orchestrate,start,[State#state.cluster_spec,
 				       State#state.leader_pid]),
-    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"End - calling  start orchestrate ",[]]),
+ %   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"End - calling  start orchestrate ",[]]),
     {noreply, State#state{wanted_state=NewWantedState}};
 
 handle_cast(Msg, State) ->

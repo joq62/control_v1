@@ -12,6 +12,7 @@
 
 %% API
 -export([
+	 is_wanted_state/0,
 	 create_appl/1,
 	 create_infra_appl/2,
 	 create_pods_based_appl/1,
@@ -32,8 +33,27 @@
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
-
-
+is_wanted_state()->
+    ParentState=case rpc:call(node(),parent_server,stopped_nodes,[],10*1000) of
+		    {ok,[]}->
+			true;
+		    _->
+			false
+		end,
+    PodState=case rpc:call(node(),pod_server,stopped_nodes,[],25*1000)  of
+		    {ok,[]}->
+			true;
+		    _->
+			false
+		end,
+    ApplState=case rpc:call(node(),appl_server,stopped_appls,[],15*1000)  of
+		 {ok,[]}->
+		     true;
+		 _->
+		     false
+		end,
+    ParentState and PodState and ApplState. 
+    
 
 %%--------------------------------------------------------------------
 %% @doc
