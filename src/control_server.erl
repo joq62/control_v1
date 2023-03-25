@@ -188,7 +188,7 @@ handle_cast(Msg, State) ->
 handle_info(timeout, State) ->
     rpc:cast(node(),orchestrate,start,[State#state.cluster_spec,
 				       State#state.leader_pid]),
-    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Server start timeout",[State#state.leader_pid]]),
+ %   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Server start timeout",[State#state.leader_pid]]),
     {noreply, State};
 
 handle_info(Info, State) ->
