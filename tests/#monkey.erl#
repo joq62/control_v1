@@ -25,38 +25,14 @@
 %% Description: Based on hosts.config file checks which hosts are avaible
 %% Returns: List({HostId,Ip,SshPort,Uid,Pwd}
 %% --------------------------------------------------------------------
-start([ClusterSpec,_Arg2])->
+start([ClusterSpec,AllPods])->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
 
-    ok=setup(),
-    ok=lib_install:start_local_appls(ClusterSpec),
-    true=lib_control:ensure_right_cookie(ClusterSpec),
-    ok=lib_install:stop_all_pods(ClusterSpec),
-    io:format("local apps running OK !!! ~p~n",[{?MODULE,?LINE,?FUNCTION_NAME}]),
-    
-    ok=lib_install:start_parents(ClusterSpec),
-    io:format("ParentNode OK !!! ~p~n",[{?MODULE,?LINE,?FUNCTION_NAME}]),
-
-    {ok,LogNode}=lib_install:start_log(ClusterSpec),
-    io:format("Log started OK !!! ~p~n",[{LogNode,rpc:call(LogNode,erlang,nodes,[],5000),?MODULE,?LINE,?FUNCTION_NAME}]),
-
-    {ok,EtcdNode}=lib_install:start_etcd(ClusterSpec),
-    io:format("EtcdNode started OK !!! ~p~n",[{EtcdNode,rpc:call(EtcdNode,erlang,nodes,[],5000),?MODULE,?LINE,?FUNCTION_NAME}]),
-
-    {ok,ControlNode}=lib_install:start_control(ClusterSpec),
-    io:format("ControlNode started OK !!! ~p~n",[{ControlNode,rpc:call(ControlNode,erlang,nodes,[],5000),?MODULE,?LINE,?FUNCTION_NAME}]),
-   
-    WhichApplications=[{Node,rpc:call(Node,application,which_applications,[],5000)}||Node<-[LogNode|rpc:call(LogNode,erlang,nodes,[],5000)]],
-    io:format("WhichApplications ~p~n",[{lists:sort(WhichApplications),?MODULE,?LINE,?FUNCTION_NAME}]),
-    
-    io:format("Stop OK !!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    AllPods=db_pod_desired_state:pods(ClusterSpec),
-    application:stop(etcd),
-    [EtcdNode]=sd:get_node(etcd),
+  
 
     io:format(" ****************************************************** ~n"),
     io:format("~p~n ",[{date(),time()}]),
-    loop(ClusterSpec,AllPods,[]),
+    loop(ClusterSpec,AllPods,[],State),
     
     
 
@@ -70,25 +46,7 @@ start([ClusterSpec,_Arg2])->
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
-
-
-loop1(ClusterSpec,AllNodes,PreviousNotice)->
-    [AvailableNode|_]=[N2||N1<-AllNodes,
-			    N2<-AllNodes,
-			   pong==rpc:call(N1,net_adm,ping,[N2],5000),
-			   pong==rpc:call(N2,sd,ping,[],5000),
-			   N1/=N2],
-    io:format("AvailableNode ~p~n ",[AvailableNode]),
-    Notice=sd:call(log,log,all_parsed,[debug],5000),
-    io:format(" ****************************************************** ~n"),
-    io:format("~p~n ",[{date(),time()}]),
-    io:format("~p~n ",[Notice]),
-    NewPreviousNotice=Notice,
- %   Nodes=[AvailableNode|rpc:call(AvailableNode,erlang,nodes,[],6000)],
- %   io:format("Nodes ~p~n ",[Nodes]),
-    timer:sleep(5*1000),
-    loop1(ClusterSpec,AllNodes,NewPreviousNotice).
-    %%--------------------------------------------------------------------
+%%--------------------------------------------------------------------
 %% @doc
 %% @spec
 %% @end
@@ -132,8 +90,8 @@ print(Notice,PreviousNotice)->
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
-kill_host(HostNam)->
-    
+reboot_host(Node)->
+    rpc:call(Node,os,cmd,["reboot "],5000),
     ok.
 
 %%--------------------------------------------------------------------
@@ -141,8 +99,8 @@ kill_host(HostNam)->
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
-kill_pod(PodNode)->
-    
+kill_pod(Node)->
+    rpc:call(Node,init,stop,[],5000),
     ok.
 
 %%--------------------------------------------------------------------
@@ -150,6 +108,23 @@ kill_pod(PodNode)->
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
-is_desired_state()->
-    
-    true.
+is_wanted_state()->
+    ParentState=case rpc:call(node(),parent_server,stopped_nodes,[],10*1000) of
+		    {ok,[]}->
+			true;
+		    _->
+			false
+		end,
+    PodState=case rpc:call(node(),pod_server,stopped_nodes,[],25*1000)  of
+		    {ok,[]}->
+			true;
+		    _->
+			false
+		end,
+    ApplState=case rpc:call(node(),appl_server,stopped_appls,[],15*1000)  of
+		 {ok,[]}->
+		     true;
+		 _->
+		     false
+		end,
+    ParentState and PodState and ApplState. 
