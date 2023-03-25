@@ -125,7 +125,7 @@ handle_cast({orchestrate_result,
 	     ResultStartInfraAppls,
 	     ResultStartUserAppls}, State) ->
 
-    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"start orchestrate_result ",[]]),
+  %  sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"start orchestrate_result ",[]]),
 
     StoppedParents=rpc:call(node(),parent_server,stopped_nodes,[],5*1000),
     case StoppedParents of
