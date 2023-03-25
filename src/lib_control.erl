@@ -129,7 +129,7 @@ start_pods()->
 %% @end
 %%--------------------------------------------------------------------
 start_appls()->
-    Result=case rpc:call(node(),appl_server,stopped_appls,[],15*1000) of
+    Result=case rpc:call(node(),appl_server,stopped_appls,[],60*1000) of
 	       {ok,[]}->
 		   ok;
 	       {ok,StoppedApplInfoLists}->	
