@@ -91,22 +91,8 @@ create_node(ParentNode)->
 					   TimeOut=10*1000,
 					   case rpc:call(node(),ops_ssh,create,[HostSpec,NodeName,Cookie,PaArgs,EnvArgs,TimeOut],TimeOut+1000) of
 					       {ok,ParentNode}->
-						   case rpc:call(ParentNode,filelib,is_dir,[ClusterSpec],10*1000) of
-						       true->
-							   case rpc:call(ParentNode,file,del_dir_r,[ClusterSpec],10*1000) of
-							       ok->
-								   case rpc:call(ParentNode,file,make_dir,[ClusterSpec],10*1000) of
-								       ok->
-									   ok;
-								       Reason->
-									   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to make dir  ",[ClusterSpec,ParentNode,Reason]]),
-									   {error,Reason}
-								   end;
-							       Reason->
-								   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to delete dir  ",[ClusterSpec,ParentNode,Reason]]),
-								   {error,Reason}
-							   end;  
-						       false->
+						   case rpc:call(ParentNode,file,del_dir_r,[ClusterSpec],10*1000) of
+						       ok->
 							   case rpc:call(ParentNode,file,make_dir,[ClusterSpec],10*1000) of
 							       ok->
 								   ok;
@@ -115,9 +101,9 @@ create_node(ParentNode)->
 								   {error,Reason}
 							   end;
 						       Reason->
-							   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed is dir calls ",[ClusterSpec,ParentNode,Reason]]),
+							   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to delete dir  ",[ClusterSpec,ParentNode,Reason]]),
 							   {error,Reason}
-						   end;   
+						   end;
 					       Reason->
 						   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to create vm  ",[ParentNode,HostSpec,NodeName,Cookie,PaArgs,EnvArgs,TimeOut,Reason]]),
 						   {error,Reason}
@@ -127,12 +113,12 @@ create_node(ParentNode)->
 					   {error,Reason}
 				   end;
 			       Reason->
-				     sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get cluster spec   ",[ParentNode,Reason]]),
+				   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get cluster spec   ",[ParentNode,Reason]]),
 				   {error,Reason}
 			   end;
 		       Reason->
-			    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get node name   ",[ParentNode,Reason]]),
-			   {error,Reason}
+			   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get node name   ",[ParentNode,Reason]]),
+		   {error,Reason}
 		   end;
 	       Reason->
 		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get host spec   ",[ParentNode,Reason]]),

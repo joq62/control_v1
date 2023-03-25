@@ -14,6 +14,7 @@
 -export([
 	 start_orchistrate/0,
 	 orchestrate_result/4,
+	 is_wanted_state/0,
 	 ping/0
 
 	]).
@@ -45,6 +46,8 @@ start(ClusterSpec)-> gen_server:start_link({local, ?SERVER}, ?SERVER, [ClusterSp
 stop()-> gen_server:call(?SERVER, {stop},infinity).
 
 
+is_wanted_state() ->
+    gen_server:call(?SERVER, {is_wanted_state},infinity).
 ping() ->
     gen_server:call(?SERVER, {ping},infinity).
 

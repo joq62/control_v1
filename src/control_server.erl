@@ -83,7 +83,7 @@ handle_call({ping_leader}, _From, State) ->
 %% gen_server API
 
 handle_call({is_wanted_state},_From, State) ->
-    Reply=pong,
+    Reply=rpc:call(node(),lib_control,is_wanted_state,[],5000),
     {reply, Reply, State};
 
 handle_call({ping},_From, State) ->
