@@ -169,7 +169,7 @@ init([ClusterSpec]) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call({active_appls},_From, State) ->
-    Reply=case rpc:call(node(),appl,active_appls,[State#state.cluster_spec],5000) of
+    Reply=case rpc:call(node(),lib_appl,active_appls,[State#state.cluster_spec],5000) of
 	      {ok,Nodes}->
 		  {ok,Nodes};
 	      Reason->
@@ -184,7 +184,7 @@ handle_call({active_appls},_From, State) ->
 %%--------------------------------------------------------------------
 
 handle_call({stopped_appls},_From, State) ->
-    Reply=case rpc:call(node(),appl,stopped_appls,[State#state.cluster_spec],5000) of
+    Reply=case rpc:call(node(),lib_appl,stopped_appls,[State#state.cluster_spec],5000) of
 	      {ok,Nodes}->
 		  {ok,Nodes};
 	      Reason->
