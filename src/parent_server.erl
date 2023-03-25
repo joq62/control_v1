@@ -116,24 +116,39 @@ init([ClusterSpec]) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
 handle_call({create_node,ParentNode},_From, State) ->
-    Reply=case lib_parent:create_node(ParentNode) of
-	      {error,Reason}->
-		  sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to create parent node ",[ParentNode]]),
-		  {error,Reason};
+    Reply=case rpc:call(node(),lib_parent,create_node,[ParentNode],5000) of
 	      ok->
 		  sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Succeeded to Create parent node ",[ParentNode]]),
 		  sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Succeeded to Create parent node ",[ParentNode]]),
-		  ok
+		  ok;
+	      Reason->
+		  sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to create parent node ",[ParentNode,Reason]]),
+		  {error,Reason}
+		      
 	  end,
     {reply, Reply, State};
 
 handle_call({active_nodes},_From, State) ->
-    Reply=lib_parent:active_nodes(State#state.cluster_spec),
+    Reply=case rpc:call(node(),lib_parent,active_nodes,[State#state.cluster_spec],5000) of
+	      {ok,Nodes}->
+		  {ok,Nodes};
+	      Reason->
+		  sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed toget active node ",[State#state.cluster_spec,Reason]]),
+		  {error,Reason}
+		      
+	  end,
     {reply, Reply, State};
 
 handle_call({stopped_nodes},_From, State) ->
-    Reply= lib_parent:stopped_nodes(State#state.cluster_spec),
+    Reply=case rpc:call(node(),lib_parent,stopped_nodes,[State#state.cluster_spec],5000) of
+	      {ok,Nodes}->
+		  {ok,Nodes};
+	      Reason->
+		  sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed toget stopped node ",[State#state.cluster_spec,Reason]]),
+		  {error,Reason}
+	  end,
     {reply, Reply, State};
+
 
 handle_call({ping},_From, State) ->
     Reply=pong,

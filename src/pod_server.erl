@@ -123,22 +123,25 @@ init([ClusterSpec]) ->
 %% @end
 %%--------------------------------------------------------------------
 
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
 handle_call({active_nodes},_From, State) ->
-    Reply= lib_pod:active_nodes(State#state.cluster_spec),  
+    Reply=case rpc:call(node(),lib_pod,active_nodes,[State#state.cluster_spec],5000) of
+	      {ok,Nodes}->
+		  {ok,Nodes};
+	      Reason->
+		  sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed toget active node ",[State#state.cluster_spec,Reason]]),
+		  {error,Reason}
+		      
+	  end,
     {reply, Reply, State};
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
 
 handle_call({stopped_nodes},_From, State) ->
-    Reply=lib_pod:stopped_nodes(State#state.cluster_spec),
+    Reply=case rpc:call(node(),lib_pod,stopped_nodes,[State#state.cluster_spec],5000) of
+	      {ok,Nodes}->
+		  {ok,Nodes};
+	      Reason->
+		  sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed toget stopped node ",[State#state.cluster_spec,Reason]]),
+		  {error,Reason}
+	  end,
     {reply, Reply, State};
 %%--------------------------------------------------------------------
 %% @doc
@@ -146,26 +149,18 @@ handle_call({stopped_nodes},_From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call({create_node,PodNode},_From, State) ->
-    Reply=case lib_pod:create_node(PodNode) of
-	      {error,Reason}->
-		  sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to create pod node ",[PodNode]]),
-		  {error,Reason};
+    Reply=case rpc:call(node(),lib_pod,create_node,[PodNode],5000) of
 	      ok->
-		  sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Succeeded to Create pod node ",[PodNode]]),
-		  sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Succeeded to Create  pod node ",[PodNode]]),
-		  ok
+		  sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Succeeded to Create  node ",[PodNode]]),
+		  sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Succeeded to Create  node ",[PodNode]]),
+		  ok;
+	      Reason->
+		  sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to create  node ",[PodNode,Reason]]),
+		  {error,Reason}
+		      
 	  end,
     {reply, Reply, State};
 
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-
-handle_call({create_pod,ParentNode,NodeName,Dir,PaArgs,EnvArgs},_From, State) ->
-    Reply=lib_pod:create_node(ParentNode,NodeName,Dir,PaArgs,EnvArgs),
-    {reply, Reply, State};
     
 %%--------------------------------------------------------------------
 %% @doc

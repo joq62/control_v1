@@ -169,7 +169,13 @@ init([ClusterSpec]) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call({active_appls},_From, State) ->
-    Reply=lib_appl:active_appls(State#state.cluster_spec),
+    Reply=case rpc:call(node(),appl,active_appls,[State#state.cluster_spec],5000) of
+	      {ok,Nodes}->
+		  {ok,Nodes};
+	      Reason->
+		  sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get active appls ",[State#state.cluster_spec,Reason]]),
+		  {error,Reason}
+	  end,
     {reply, Reply, State};
 %%--------------------------------------------------------------------
 %% @doc
@@ -178,7 +184,13 @@ handle_call({active_appls},_From, State) ->
 %%--------------------------------------------------------------------
 
 handle_call({stopped_appls},_From, State) ->
-    Reply=lib_appl:stopped_appls(State#state.cluster_spec),
+    Reply=case rpc:call(node(),appl,stopped_appls,[State#state.cluster_spec],5000) of
+	      {ok,Nodes}->
+		  {ok,Nodes};
+	      Reason->
+		  sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get stopped appls ",[State#state.cluster_spec,Reason]]),
+		  {error,Reason}
+	  end,
     {reply, Reply, State};
 %%--------------------------------------------------------------------
 %% @doc
@@ -186,17 +198,15 @@ handle_call({stopped_appls},_From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call({create_appl,ApplSpec,PodNode},_From, State) ->
-    Reply=case lib_appl:create_appl(ApplSpec,PodNode) of
-{error,Reason}->
-		  sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to create Application on pod node ",[ApplSpec,PodNode]]),
-		  {error,Reason};
+    Reply=case rpc:call(node(),lib_appl,create_appl,[ApplSpec,PodNode],20*1000) of
 	      ok->
 		  sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Succeeded to Create Application on pod node ",[ApplSpec,PodNode]]),
 		  sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Succeeded to Create Application on pod node ",[ApplSpec,PodNode]]),
-		  ok
-
+		  ok;
+	      Reason->
+		  sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to create appl  ",[ApplSpec,PodNode,Reason]]),
+		  {error,Reason}
 	  end,
-	      
     {reply, Reply, State};
     
 

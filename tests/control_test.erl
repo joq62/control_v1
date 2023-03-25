@@ -94,6 +94,7 @@ loop1(ClusterSpec,AllNodes,PreviousNotice)->
 %% @end
 %%--------------------------------------------------------------------
 loop(ClusterSpec,AllNodes,PreviousNotice)->
+    [net_adm:ping(N)||N<-AllNodes],
     [AvailableNode|_]=[N2||N1<-AllNodes,
 			    N2<-AllNodes,
 			   pong==rpc:call(N1,net_adm,ping,[N2],5000),
