@@ -61,7 +61,7 @@ is_wanted_state()->
 %% @end
 %%--------------------------------------------------------------------
 start_parents()->
-    Result=case rpc:call(node(),parent_server,stopped_nodes,[],10*1000) of
+    Result=case rpc:call(node(),parent_server,stopped_nodes,[],20*1000) of
 	       {ok,[]}->
 		   ok;
 	       {ok,StoppedParents}->
@@ -185,7 +185,7 @@ start_infra_appls(ClusterSpec)->
 %%--------------------------------------------------------------------
 create_pods_based_appl(ApplSpec)->
     sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Used but candidate to be removed ",[]]),
-    Result=case sd:call(etcd,db_pod_desired_state,get_all_id,[],10*1000) of
+    Result=case sd:call(etcd,db_pod_desired_state,get_all_id,[],60*1000) of
 	       {badrpc,Reason}->
 		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["db_pod_desired_state,get_all_id : ",badrpc,Reason]]),
 		   {error,[badrpc,Reason,?MODULE,?LINE]};
